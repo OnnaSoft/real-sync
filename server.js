@@ -1,34 +1,38 @@
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";
+import dotenv from "dotenv";
+import "./db.js";
 import authRouter from "./routes/auth.js";
+
+// Load environment variables from .env file
+dotenv.config();
 
 const viteDevServer =
   process.env.NODE_ENV === "production"
     ? null
-    : await import("vite").then((vite) =>
+    : // @ts-ignore
+      await import("vite").then((vite) =>
         vite.createServer({
           server: { middlewareMode: true },
         })
       );
 
 const app = express();
+app.use(express.json());
 app.use(
-  viteDevServer
-    ? viteDevServer.middlewares
-    : express.static("build/client")
+  viteDevServer ? viteDevServer.middlewares : express.static("build/client")
 );
 
 const build = viteDevServer
-  ? async () =>
-      (await viteDevServer.ssrLoadModule(
-        "virtual:remix/server-build"
-      ))
-  : (await import("./build/server/index.js"));
-
+  ? async () => await viteDevServer.ssrLoadModule("virtual:remix/server-build")
+  : // @ts-ignore
+    await import("./build/server/index.js");
 
 app.use("/auth", authRouter);
 app.all("*", createRequestHandler({ build }));
 
-app.listen(3000, () => {
-  console.log("App listening on http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`App listening on http://localhost:${PORT}`);
 });

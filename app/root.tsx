@@ -1,30 +1,27 @@
 import React from "react";
-import {
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-} from "@remix-run/react";
+import { Links, Meta, Outlet, Scripts } from "@remix-run/react";
 import stylesheet from "./tailwind.css?url";
 import { LinksFunction } from "@remix-run/node";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
 ];
 
+const queryClient = new QueryClient();
+
 export default function App() {
   return (
     <html>
       <head>
-        <link
-          rel="icon"
-          href="data:image/x-icon;base64,AA"
-        />
+        <link rel="icon" href="data:image/x-icon;base64,AA" />
         <Meta />
         <Links />
       </head>
       <body>
-        <Outlet />
+        <QueryClientProvider client={queryClient}>
+          <Outlet />
+        </QueryClientProvider>
 
         <Scripts />
       </body>

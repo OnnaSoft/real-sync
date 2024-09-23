@@ -28,7 +28,16 @@
       },
   
       // Vite takes care of building everything, not tsc.
-      "noEmit": true
+      "noEmit": true,
+      "typeRoots": ["./node_modules/@types", "./src/types"],
+      "checkJs": true,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "strictFunctionTypes": true,
+      "strictBindCallApply": true,
+      "strictPropertyInitialization": true,
+      "noImplicitThis": true,
+      "useUnknownInCatchVariables": true
     }
   }
   
