@@ -48,9 +48,17 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  */
 
 /**
+ * @typedef {Object} UserData
+ * @property {number} id - ID of the user
+ * @property {string} fullname - Full name of the user
+ * @property {string} username - Username of the user
+ * @property {string} email - Email of the user
+ */
+
+/**
  * @typedef {Object} LoginSuccessResBody
  * @property {string} message - Success message
- * @property {number} userId - ID of the logged in user
+ * @property {UserData} user - User data
  * @property {string} token - JWT token
  */
 
@@ -98,7 +106,12 @@ router.post(
 
       res.status(200).json({
         message: "Login successful",
-        userId: user.getDataValue("id"),
+        user: {
+          id: user.getDataValue("id"),
+          fullname: user.getDataValue("fullname"),
+          username: user.getDataValue("username"),
+          email: user.getDataValue("email"),
+        },
         token: token,
       });
     } catch (error) {

@@ -7,6 +7,9 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { useAppDispatch } from "../store/hooks";
+import { login } from "../store/slices/authSlice";
+import { User } from "../models/user";
 
 type LoginData = {
   username: string;
@@ -18,11 +21,18 @@ type FormErrors = {
   password?: string;
 };
 
+type LoginResponse = {
+  message: string;
+  user: User;
+  token: string;
+};
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
-  const mutation = useMutation<{ success: boolean }, Error, LoginData>({
+  const mutation = useMutation<LoginResponse, Error, LoginData>({
     mutationFn: (loginData) => {
       return fetch("/auth/login", {
         method: "POST",
@@ -39,7 +49,8 @@ export default function LoginPage() {
         return res.json();
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      dispatch(login(data.user));
       navigate("/dashboard"); // Redirect to dashboard on successful login
     },
   });

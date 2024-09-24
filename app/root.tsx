@@ -4,6 +4,8 @@ import { Links, Meta, Outlet, Scripts } from "@remix-run/react";
 import stylesheet from "./tailwind.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Provider } from "react-redux";
+import store from "./store";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -11,7 +13,20 @@ export const links: LinksFunction = () => [
 
 const queryClient = new QueryClient();
 
+function AppContent() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Outlet />
+    </QueryClientProvider>
+  );
+}
+
 export default function App() {
+  const [isClient, setIsClient] = React.useState(false);
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
     <html>
       <head>
@@ -20,10 +35,11 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <QueryClientProvider client={queryClient}>
-          <Outlet />
-        </QueryClientProvider>
-
+        {isClient && (
+          <Provider store={store}>
+            <AppContent />
+          </Provider>
+        )}
         <Scripts />
       </body>
     </html>
