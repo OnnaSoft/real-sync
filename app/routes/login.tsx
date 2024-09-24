@@ -5,7 +5,6 @@ import Footer from "../components/Footer";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Checkbox } from "../components/ui/checkbox";
 import { AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 
@@ -114,13 +113,7 @@ export default function LoginPage() {
                   </p>
                 )}
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" name="remember" />
-                  <Label htmlFor="remember" className="text-sm">
-                    Remember me
-                  </Label>
-                </div>
+              <div className="flex items-center justify-end">
                 <Link
                   to="/forgot-password"
                   className="text-sm text-blue-600 hover:underline"

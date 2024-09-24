@@ -1,5 +1,6 @@
 import React from "react";
 import { Links, Meta, Outlet, Scripts } from "@remix-run/react";
+// @ts-ignore
 import stylesheet from "./tailwind.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

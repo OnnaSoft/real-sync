@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import bcrypt from "bcrypt";
+import { Model, Sequelize } from "sequelize";
 
 /**
  * @typedef {Object} UserAttributes
@@ -8,11 +9,12 @@ import bcrypt from "bcrypt";
  * @property {string} username
  * @property {string} email
  * @property {string} password
+ * @property {string | null} [resetToken]
+ * @property {Date | null} [resetTokenExpiry]
  */
 
 /**
- * @typedef {import('sequelize').Sequelize} Sequelize
- * @typedef {import('sequelize').ModelStatic<import('sequelize').Model<UserAttributes, Omit<UserAttributes, 'id'>>>} UserModel
+ * @typedef {import("sequelize").ModelStatic<Model<UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry'>>>} UserModel
  */
 
 /**
@@ -76,6 +78,14 @@ const UserModel = (sequelize) => {
             msg: "Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one symbol",
           },
         },
+      },
+      resetToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      resetTokenExpiry: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
     },
     {
