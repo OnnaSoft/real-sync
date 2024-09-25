@@ -2,6 +2,13 @@ import { useState } from "react";
 import { PricingCard } from "../components/PricingCard";
 import { Button } from "../components/ui/button";
 import { toast } from "../hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
 interface Plan {
   id: number;
@@ -135,24 +142,40 @@ export default function ActivePlan() {
     }
   };
 
+  const currentPlan = fakePlans.find((plan) => plan.id === userPlan.planId);
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Active Plan</h2>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-xl font-semibold mb-4">Current Plan</h3>
-        {userPlan && fakePlans.find((plan) => plan.id === userPlan.planId) && (
-          <div>
-            <p>
-              Plan:{" "}
-              {fakePlans.find((plan) => plan.id === userPlan.planId)?.name}
-            </p>
-            <p>
-              Activated: {new Date(userPlan.activatedAt).toLocaleDateString()}
-            </p>
-            <p>Expires: {new Date(userPlan.expiresAt).toLocaleDateString()}</p>
-          </div>
-        )}
-      </div>
+      <h2 className="text-3xl font-bold tracking-tight">Active Plan</h2>
+
+      <Card className="bg-white">
+        <CardHeader>
+          <CardTitle>Current Plan</CardTitle>
+          <CardDescription>Your current subscription details</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {currentPlan && (
+            <div className="space-y-2">
+              <p>
+                <strong>Plan:</strong> {currentPlan.name}
+              </p>
+              <p>
+                <strong>Price:</strong> ${currentPlan.price} /{" "}
+                {currentPlan.billingPeriod}
+              </p>
+              <p>
+                <strong>Activated:</strong>{" "}
+                {new Date(userPlan.activatedAt).toLocaleDateString()}
+              </p>
+              <p>
+                <strong>Expires:</strong>{" "}
+                {new Date(userPlan.expiresAt).toLocaleDateString()}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <h3 className="text-xl font-semibold">Available Plans</h3>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {fakePlans.map((plan) => (

@@ -13,6 +13,7 @@ import {
   CreditCard,
   LogOut,
   Receipt,
+  Book,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -35,7 +36,9 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
         } md:block`}
       >
         <div className="flex items-center justify-between mb-4 pr-4">
-          <h2 className="text-xl font-bold">RealSync</h2>
+          <h2 className="text-xl font-bold">
+            <Link to="/dashboard">RealSync</Link>
+          </h2>
           <Button
             variant="ghost"
             size="icon"
@@ -46,12 +49,6 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
           </Button>
         </div>
         <nav>
-          <Link to="/dashboard" className="block mb-2">
-            <Button variant="ghost" className="w-full justify-start">
-              <Home className="mr-2 h-4 w-4" />
-              Dashboard
-            </Button>
-          </Link>
           <Link to="/dashboard/communication" className="block mb-2">
             <Button variant="ghost" className="w-full justify-start">
               <Headphones className="mr-2 h-4 w-4" />
@@ -64,12 +61,6 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
               Manage Tunnels
             </Button>
           </Link>
-          <Link to="/dashboard/teams" className="block mb-2">
-            <Button variant="ghost" className="w-full justify-start">
-              <Users className="mr-2 h-4 w-4" />
-              Teams
-            </Button>
-          </Link>
           <Link to="/dashboard/plan" className="block mb-2">
             <Button variant="ghost" className="w-full justify-start">
               <CreditCard className="mr-2 h-4 w-4" />
@@ -80,6 +71,18 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
             <Button variant="ghost" className="w-full justify-start">
               <Receipt className="mr-2 h-4 w-4" />
               Billing History
+            </Button>
+          </Link>
+          <Link to="/dashboard/payment-methods" className="block mb-2">
+            <Button variant="ghost" className="w-full justify-start">
+              <CreditCard className="mr-2 h-4 w-4" />
+              Payment Methods
+            </Button>
+          </Link>
+          <Link to="/dashboard/api-docs" className="block mb-2">
+            <Button variant="ghost" className="w-full justify-start">
+              <Book className="mr-2 h-4 w-4" />
+              API Documentation
             </Button>
           </Link>
         </nav>

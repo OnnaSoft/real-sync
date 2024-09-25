@@ -305,7 +305,7 @@ export default function Communication() {
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Manage Applications</h2>
 
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle>
             {editingApp ? "Edit Application" : "Create New Application"}
@@ -418,7 +418,7 @@ export default function Communication() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle>Your Applications</CardTitle>
           <CardDescription>Manage your existing applications</CardDescription>

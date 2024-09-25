@@ -69,7 +69,7 @@ export default function Tunnels() {
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Manage Tunnels</h2>
 
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle>Create New Tunnel</CardTitle>
           <CardDescription>
@@ -84,7 +84,7 @@ export default function Tunnels() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle>Active Tunnels</CardTitle>
           <CardDescription>Manage your existing tunnels</CardDescription>
