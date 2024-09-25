@@ -117,11 +117,6 @@ const UserModel = (sequelize) => {
     }
   );
 
-  // @ts-ignore
-  User.associate = function (models) {
-    // define associations here
-  };
-
   return User;
 };
 

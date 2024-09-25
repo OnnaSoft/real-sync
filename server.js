@@ -3,6 +3,8 @@ import express from "express";
 import dotenv from "dotenv";
 import "./db.js";
 import authRouter from "./routes/auth.js";
+import plansRouter from "./routes/plans.js";
+import usersRouter from "./routes/users.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -29,6 +31,8 @@ const build = viteDevServer
     await import("./build/server/index.js");
 
 app.use("/auth", authRouter);
+app.use("/plans", plansRouter);
+app.use("/users", usersRouter);
 app.all("*", createRequestHandler({ build }));
 
 const PORT = process.env.PORT || 3000;

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import Plans from "../components/Plans";
 
 export default function LandingPage() {
   return (
@@ -216,49 +217,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
-          <div className="max-w-5xl mx-auto">
-            <h2 className="text-2xl font-bold text-center mb-8">
-              Plans and Pricing
-            </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <PricingCard
-                title="Basic"
-                price="9.99"
-                features={[
-                  "Real-time chat",
-                  "Voice calls",
-                  "Up to 5 users",
-                  "Secure tunnel (1 connection)",
-                  "Email support",
-                ]}
-              />
-              <PricingCard
-                title="Pro"
-                price="19.99"
-                features={[
-                  "Everything in Basic",
-                  "Video calls",
-                  "Up to 20 users",
-                  "Secure tunnel (3 connections)",
-                  "Priority support",
-                ]}
-                highlighted={true}
-              />
-              <PricingCard
-                title="Enterprise"
-                price="49.99"
-                features={[
-                  "Everything in Pro",
-                  "Unlimited users",
-                  "Secure tunnel (unlimited connections)",
-                  "API integration",
-                  "Dedicated account manager",
-                ]}
-              />
-            </div>
-          </div>
-        </section>
+        <Plans />
 
         <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-100">
           <div className="max-w-4xl mx-auto text-center">
@@ -312,47 +271,6 @@ function UsageCard({ icon, title, description }: UsageCardProps) {
       <div className="flex justify-center mb-3">{icon}</div>
       <h3 className="text-lg font-semibold mb-2 text-center">{title}</h3>
       <p className="text-sm text-gray-600 text-center">{description}</p>
-    </div>
-  );
-}
-
-interface PricingCardProps {
-  title: string;
-  price: string;
-  features: string[];
-  highlighted?: boolean;
-}
-
-function PricingCard({
-  title,
-  price,
-  features,
-  highlighted = false,
-}: PricingCardProps) {
-  return (
-    <div
-      className={`bg-white p-4 rounded-lg shadow-md ${
-        highlighted ? "border-2 border-blue-500 relative" : ""
-      }`}
-    >
-      {highlighted && (
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-          Most Popular
-        </div>
-      )}
-      <h3 className="text-xl font-bold mb-3 text-center">{title}</h3>
-      <p className="text-3xl font-bold text-center mb-4">
-        ${price}
-        <span className="text-lg text-gray-500">/month</span>
-      </p>
-      <ul className="space-y-2 mb-4 text-sm">
-        {features.map((feature, index) => (
-          <li key={index} className="flex items-center">
-            <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-            <span>{feature}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

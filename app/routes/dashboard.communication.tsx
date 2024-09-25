@@ -26,12 +26,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../components/ui/dialog";
-import { Pencil, Trash2, Phone, Video, MessageSquare, Key } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
+import {
+  Pencil,
+  Trash2,
+  Phone,
+  Video,
+  MessageSquare,
+  Key,
+  Server,
+} from "lucide-react";
 
 interface ApiKey {
   id: string;
   key: string;
   lastUsed: Date | null;
+}
+
+interface DedicatedServer {
+  size: string;
+  price: number;
 }
 
 interface App {
@@ -42,14 +62,28 @@ interface App {
   enableVideoCalls: boolean;
   enableConversationLogging: boolean;
   apiKeys: ApiKey[];
+  dedicatedServer: DedicatedServer | null;
 }
+
+const dedicatedServerOptions: DedicatedServer[] = [
+  { size: "Small", price: 20 },
+  { size: "Medium", price: 50 },
+  { size: "Large", price: 100 },
+  { size: "XLarge", price: 250 },
+  { size: "XXLarge", price: 500 },
+];
 
 // Simulación de un servicio de aplicaciones
 const appService = {
   createApp: (app: Omit<App, "id" | "apiKeys">) =>
     new Promise<App>((resolve) =>
       setTimeout(
-        () => resolve({ ...app, id: `app-${Date.now()}`, apiKeys: [] }),
+        () =>
+          resolve({
+            ...app,
+            id: `app-${Date.now()}`,
+            apiKeys: [],
+          }),
         1000
       )
     ),
@@ -146,6 +180,7 @@ export default function Communication() {
         },
         { id: "key-2", key: "api-def456", lastUsed: null },
       ],
+      dedicatedServer: null,
     },
     {
       id: "app-2",
@@ -161,6 +196,7 @@ export default function Communication() {
           lastUsed: new Date(2023, 6, 1, 14, 45),
         },
       ],
+      dedicatedServer: { size: "Medium", price: 50 },
     },
   ]);
   const [newApp, setNewApp] = useState<Omit<App, "id" | "apiKeys">>({
@@ -169,6 +205,7 @@ export default function Communication() {
     enableCalls: false,
     enableVideoCalls: false,
     enableConversationLogging: false,
+    dedicatedServer: null,
   });
   const [editingApp, setEditingApp] = useState<App | null>(null);
 
@@ -182,6 +219,7 @@ export default function Communication() {
         enableCalls: false,
         enableVideoCalls: false,
         enableConversationLogging: false,
+        dedicatedServer: null,
       });
     } catch (error) {
       console.error("Error creating app:", error);
@@ -212,12 +250,24 @@ export default function Communication() {
   };
 
   const handleCheckboxChange = (
-    field: keyof Omit<App, "id" | "name" | "description" | "apiKeys">
+    field: keyof Omit<
+      App,
+      "id" | "name" | "description" | "apiKeys" | "dedicatedServer"
+    >
   ) => {
     if (editingApp) {
       setEditingApp({ ...editingApp, [field]: !editingApp[field] });
     } else {
       setNewApp({ ...newApp, [field]: !newApp[field] });
+    }
+  };
+
+  const handleServerChange = (value: string) => {
+    const server = dedicatedServerOptions.find((s) => s.size === value) || null;
+    if (editingApp) {
+      setEditingApp({ ...editingApp, dedicatedServer: server });
+    } else {
+      setNewApp({ ...newApp, dedicatedServer: server });
     }
   };
 
@@ -289,7 +339,7 @@ export default function Communication() {
                   : setNewApp({ ...newApp, description: e.target.value })
               }
             />
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 cursor-pointer">
               <Checkbox
                 id="enableCalls"
                 checked={
@@ -299,7 +349,7 @@ export default function Communication() {
               />
               <Label htmlFor="enableCalls">Enable Calls</Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 cursor-pointer">
               <Checkbox
                 id="enableVideoCalls"
                 checked={
@@ -311,7 +361,7 @@ export default function Communication() {
               />
               <Label htmlFor="enableVideoCalls">Enable Video Calls</Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 cursor-pointer">
               <Checkbox
                 id="enableConversationLogging"
                 checked={
@@ -326,6 +376,35 @@ export default function Communication() {
               <Label htmlFor="enableConversationLogging">
                 Enable Conversation Logging
               </Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dedicatedServer">Dedicated Server</Label>
+              <Select
+                onValueChange={handleServerChange}
+                value={
+                  editingApp?.dedicatedServer?.size ||
+                  newApp.dedicatedServer?.size ||
+                  "-"
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a server size" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  <SelectItem value="-" className="cursor-pointer">
+                    No dedicated server
+                  </SelectItem>
+                  {dedicatedServerOptions.map((option) => (
+                    <SelectItem
+                      key={option.size}
+                      className="cursor-pointer"
+                      value={option.size}
+                    >
+                      {option.size} - ${option.price}/month
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button onClick={editingApp ? handleUpdateApp : handleCreateApp}>
               {editingApp ? "Update Application" : "Create Application"}
@@ -351,6 +430,7 @@ export default function Communication() {
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Features</TableHead>
+                <TableHead>Dedicated Server</TableHead>
                 <TableHead>API Keys</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -368,6 +448,19 @@ export default function Communication() {
                         <MessageSquare className="h-4 w-4" />
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {app.dedicatedServer ? (
+                      <div className="flex items-center space-x-2">
+                        <Server className="h-4 w-4" />
+                        <span>
+                          {app.dedicatedServer.size} - $
+                          {app.dedicatedServer.price}/month
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500">No dedicated server</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <ApiKeysModal
