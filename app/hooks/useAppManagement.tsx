@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "./use-toast";
 import { ToastAction } from "../components/ui/toast";
 import { Link } from "react-router-dom";
-import { App, DedicatedServer } from "../models/app";
+import { App, DedicatedServerPlan } from "../models/app";
 
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
@@ -45,7 +45,7 @@ export function useAppManagement(token: string) {
     enabled: !!token,
   });
 
-  const dedicatedServerPlansQuery = useQuery<DedicatedServer[]>({
+  const dedicatedServerPlansQuery = useQuery<DedicatedServerPlan[]>({
     queryKey: ["dedicatedServerPlans"],
     queryFn: async () => {
       const response = await fetch(`/app-dedicated-server-plans`, {
@@ -60,7 +60,11 @@ export function useAppManagement(token: string) {
   });
 
   const createAppMutation = useMutation({
-    mutationFn: async (newApp: Omit<App, "id" | "apiKeys">) => {
+    mutationFn: async (
+      newApp: Omit<App, "id" | "apiKeys" | "dedicatedServerPlan"> & {
+        dedicatedServerPlanId: number;
+      }
+    ) => {
       const response = await fetch(`/apps`, {
         method: "POST",
         headers: {
@@ -95,7 +99,7 @@ export function useAppManagement(token: string) {
   });
 
   const updateAppMutation = useMutation({
-    mutationFn: async (app: App) => {
+    mutationFn: async (app: Omit<App, "dedicatedServerPlan">) => {
       const response = await fetch(`/apps/${app.id}`, {
         method: "PUT",
         headers: {

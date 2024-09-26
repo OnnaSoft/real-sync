@@ -4,7 +4,7 @@ export interface ApiKey {
   lastUsed: Date | null;
 }
 
-export interface DedicatedServer {
+export interface DedicatedServerPlan {
   id: number;
   size: string;
   price: string;
@@ -22,5 +22,5 @@ export interface App {
   enableVideoCalls: boolean;
   enableConversationLogging: boolean;
   apiKeys: ApiKey[];
-  dedicatedServer: DedicatedServer | null;
+  dedicatedServerPlan: DedicatedServerPlan | null;
 }

@@ -90,7 +90,7 @@ router.post(
         });
       }
 
-      if (activePlan.getDataValue("maxApps") !== 0) {
+      if (activePlan.getDataValue("maxApps") !== 0 && !dedicatedServerPlanId) {
         // 0 means unlimited
         const appCount = await App.count({ where: { userId } });
         if (appCount >= activePlan.getDataValue("maxApps")) {

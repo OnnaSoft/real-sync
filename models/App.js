@@ -108,9 +108,13 @@ const AppModel = (sequelize) => {
           if (activePlan.maxApps !== 0) {
             // 0 means unlimited
             const appCount = await App.count({
-              where: { userId: app.getDataValue("userId") },
+              // @ts-ignore
+              where: {
+                userId: app.getDataValue("userId"),
+                dedicatedServerPlanId: null,
+              },
             });
-            if (appCount >= activePlan.maxApps) {
+            if (appCount > activePlan.maxApps) {
               throw new Error(
                 "Maximum number of apps reached for the current plan"
               );

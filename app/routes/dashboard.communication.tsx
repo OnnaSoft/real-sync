@@ -48,7 +48,7 @@ export default function Communication() {
     enableCalls: false,
     enableVideoCalls: false,
     enableConversationLogging: false,
-    dedicatedServer: null,
+    dedicatedServerPlan: null,
   });
   const [editingApp, setEditingApp] = useState<App | null>(null);
 
@@ -64,14 +64,21 @@ export default function Communication() {
 
   const handleCreateApp = async () => {
     try {
-      await createApp(newApp);
+      await createApp({
+        name: newApp.name,
+        description: newApp.description,
+        enableCalls: newApp.enableCalls,
+        enableVideoCalls: newApp.enableVideoCalls,
+        enableConversationLogging: newApp.enableConversationLogging,
+        dedicatedServerPlanId: newApp.dedicatedServerPlan?.id || 0,
+      });
       setNewApp({
         name: "",
         description: "",
         enableCalls: false,
         enableVideoCalls: false,
         enableConversationLogging: false,
-        dedicatedServer: null,
+        dedicatedServerPlan: null,
       });
     } catch (error) {
       console.error("Error creating app:", error);
@@ -81,7 +88,15 @@ export default function Communication() {
   const handleUpdateApp = async () => {
     if (!editingApp) return;
     try {
-      await updateApp(editingApp);
+      await updateApp({
+        id: editingApp.id,
+        name: editingApp.name,
+        description: editingApp.description,
+        enableCalls: editingApp.enableCalls,
+        enableVideoCalls: editingApp.enableVideoCalls,
+        enableConversationLogging: editingApp.enableConversationLogging,
+        apiKeys: editingApp.apiKeys,
+      });
       setEditingApp(null);
     } catch (error) {
       console.error("Error updating app:", error);
@@ -112,9 +127,9 @@ export default function Communication() {
   const handleServerChange = (value: string) => {
     const server = dedicatedServerPlans.find((s) => s.size === value) || null;
     if (editingApp) {
-      setEditingApp({ ...editingApp, dedicatedServer: server });
+      setEditingApp({ ...editingApp, dedicatedServerPlan: server });
     } else {
-      setNewApp({ ...newApp, dedicatedServer: server });
+      setNewApp({ ...newApp, dedicatedServerPlan: server });
     }
   };
 
@@ -215,8 +230,8 @@ export default function Communication() {
               <Select
                 onValueChange={handleServerChange}
                 value={
-                  editingApp?.dedicatedServer?.size ||
-                  newApp.dedicatedServer?.size ||
+                  editingApp?.dedicatedServerPlan?.size ||
+                  newApp.dedicatedServerPlan?.size ||
                   "-"
                 }
                 disabled={!!editingApp}
@@ -234,7 +249,8 @@ export default function Communication() {
                       className="cursor-pointer"
                       value={plan.size}
                     >
-                      {plan.size} - ${plan.price}/month
+                      ${plan.price.length === 5 && " "}
+                      {plan.price}/month - {plan.size}: {plan.description}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -284,12 +300,12 @@ export default function Communication() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {app.dedicatedServer ? (
+                    {app.dedicatedServerPlan ? (
                       <div className="flex items-center space-x-2">
                         <Server className="h-4 w-4" />
                         <span>
-                          {app.dedicatedServer.size} - $
-                          {app.dedicatedServer.price}/month
+                          {app.dedicatedServerPlan.size} - $
+                          {app.dedicatedServerPlan.price}/month
                         </span>
                       </div>
                     ) : (
