@@ -23,9 +23,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useAppSelector } from "../store/hooks";
 
 const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const auth = useAppSelector((state) => state.auth);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  if (!auth.isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -108,7 +114,7 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center">
                   <User className="mr-2 h-5 w-5" />
-                  <span className="mr-2">John Doe</span>
+                  <span className="mr-2">{auth.user?.fullname}</span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>

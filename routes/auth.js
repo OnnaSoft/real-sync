@@ -4,7 +4,7 @@ import { Op } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Resend } from "resend";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 const router = express.Router();
 
@@ -27,7 +27,7 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET ?? "";
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -71,6 +71,14 @@ router.post(
    */
   async (req, res) => {
     const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        errors: {
+          credentials: { message: "Username and password are required" },
+        },
+      });
+    }
 
     try {
       const user = await User.findOne({

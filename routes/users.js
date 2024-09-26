@@ -25,16 +25,13 @@ router.get(
   validateSessionToken,
   /**
    * GET /users/profile
-   * @param {import("../types/http").RequestWithSession & {
-   *  user: User
-   * }} req
+   * @param {express.Request & { user: User }} req
    * @param {express.Response<ProfileResponse | ErrorResBody>} res
    */
   // @ts-ignore
   async (req, res) => {
     const user = req.user;
     try {
-      console.log("here");
       const userPlan = await UserPlan.findOne({
         where: {
           userId: user.id,
@@ -44,7 +41,6 @@ router.get(
         },
         include: [{ model: Plan, attributes: ["id", "name", "code", "price"] }],
       });
-      console.log("here 2");
 
       /** @type {ProfileResponse} */
       const response = {
@@ -67,7 +63,5 @@ router.get(
     }
   }
 );
-
-// ... rest of the router code
 
 export default router;

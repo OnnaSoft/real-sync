@@ -106,9 +106,9 @@ export default function PaymentMethods() {
   };
 
   return (
-    <div className="space-y-6 bg-white">
+    <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Payment Methods</h2>
-      <Card>
+      <Card className="bg-white">
         <CardHeader>
           <CardTitle>Your Payment Methods</CardTitle>
           <CardDescription>

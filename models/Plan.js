@@ -134,15 +134,6 @@ const PlanModel = (sequelize) => {
     }
   );
 
-  /**
-   * @param {Object} models
-   * @param {import("sequelize").ModelStatic<Model<import("./UserPlan").UserPlanAttributes>>} models.UserPlan
-   */
-  // @ts-ignore
-  Plan.associate = function (models) {
-    Plan.hasMany(models.UserPlan, { foreignKey: "planId" });
-  };
-
   return Plan;
 };
 

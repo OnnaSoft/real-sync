@@ -17,6 +17,6 @@
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true
   },
-  "include": ["**/*.js", "models/User.js"],
+  "include": ["**/*.js"],
   "exclude": ["node_modules", "**/node_modules/*"]
 }
