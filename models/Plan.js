@@ -16,6 +16,7 @@ import { Model, Sequelize } from "sequelize";
  * @property {'email' | 'priority' | 'dedicated'} supportLevel
  * @property {boolean} apiIntegration
  * @property {boolean} dedicatedAccountManager
+ * @property {string} stripePriceId
  */
 
 /**
@@ -127,6 +128,14 @@ const PlanModel = (sequelize) => {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      stripePriceId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+          notEmpty: { msg: "Stripe price ID is required" },
+        },
       },
     },
     {

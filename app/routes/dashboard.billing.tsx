@@ -19,6 +19,8 @@ import {
 } from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
 import { Download, CreditCard } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useAppSelector } from "../store/hooks";
 
 interface BillingHistory {
   id: string;
@@ -28,11 +30,33 @@ interface BillingHistory {
   invoice: string;
 }
 
-interface CurrentPlan {
+interface Plan {
+  id: number;
   name: string;
-  price: number;
+  code: string;
+  price: string;
   billingPeriod: string;
-  nextBillingDate: string;
+}
+
+interface UserPlan {
+  id: number;
+  userId: number;
+  planId: number;
+  status: string;
+  activatedAt: string;
+  cancelRequestedAt: string | null;
+  effectiveCancelDate: string | null;
+  plan: Plan;
+}
+
+interface UserProfile {
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    fullname: string;
+  };
+  currentPlan: UserPlan;
 }
 
 const fakeBillingHistory: BillingHistory[] = [
@@ -73,16 +97,26 @@ const fakeBillingHistory: BillingHistory[] = [
   },
 ];
 
-const fakeCurrentPlan: CurrentPlan = {
-  name: "Pro Plan",
-  price: 19.99,
-  billingPeriod: "monthly",
-  nextBillingDate: "2023-06-01",
-};
-
 export default function Billing() {
   const [billingHistory] = useState<BillingHistory[]>(fakeBillingHistory);
-  const [currentPlan] = useState<CurrentPlan>(fakeCurrentPlan);
+  const token = useAppSelector((state) => state.auth.token);
+
+  const {
+    data: userProfile,
+    isLoading,
+    error,
+  } = useQuery<UserProfile>({
+    queryKey: ["userProfile"],
+    queryFn: async () => {
+      const response = await fetch("/users/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch user profile");
+      }
+      return response.json();
+    },
+  });
 
   const getStatusBadge = (status: BillingHistory["status"]) => {
     switch (status) {
@@ -97,6 +131,16 @@ export default function Billing() {
     }
   };
 
+  if (isLoading) {
+    return <div>Loading billing information...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading billing information. Please try again.</div>;
+  }
+
+  const currentPlan = userProfile?.currentPlan;
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Billing</h2>
@@ -109,25 +153,41 @@ export default function Billing() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <p>
-              <strong>Plan:</strong> {currentPlan.name}
-            </p>
-            <p>
-              <strong>Price:</strong> ${currentPlan.price.toFixed(2)} /{" "}
-              {currentPlan.billingPeriod}
-            </p>
-            <p>
-              <strong>Next billing date:</strong> {currentPlan.nextBillingDate}
-            </p>
-          </div>
+          {currentPlan ? (
+            <div className="space-y-2">
+              <p>
+                <strong>Plan:</strong> {currentPlan.plan.name}
+              </p>
+              <p>
+                <strong>Price:</strong> ${currentPlan.plan.price} /{" "}
+                {currentPlan.plan.billingPeriod}
+              </p>
+              <p>
+                <strong>Status:</strong> {currentPlan.status}
+              </p>
+              <p>
+                <strong>Activated:</strong>{" "}
+                {new Date(currentPlan.activatedAt).toLocaleDateString()}
+              </p>
+              {currentPlan.cancelRequestedAt && (
+                <p>
+                  <strong>Cancellation Requested:</strong>{" "}
+                  {new Date(currentPlan.cancelRequestedAt).toLocaleDateString()}
+                </p>
+              )}
+              {currentPlan.effectiveCancelDate && (
+                <p>
+                  <strong>Effective Cancel Date:</strong>{" "}
+                  {new Date(
+                    currentPlan.effectiveCancelDate
+                  ).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p>No active plan. Please select a plan to get started.</p>
+          )}
         </CardContent>
-        <CardFooter>
-          <Button variant="outline">
-            <CreditCard className="mr-2 h-4 w-4" />
-            Update Payment Method
-          </Button>
-        </CardFooter>
       </Card>
 
       <Card className="bg-white">

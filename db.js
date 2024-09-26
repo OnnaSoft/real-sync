@@ -15,6 +15,9 @@ const requiredEnvVars = [
   "DB_PASSWORD",
   "DB_HOST",
   "DB_PORT",
+  "STRIPE_BASIC_PRICE_ID",
+  "STRIPE_PRO_PRICE_ID",
+  "STRIPE_ENTERPRISE_PRICE_ID",
 ];
 const missingEnvVars = requiredEnvVars.filter(
   (varName) => !process.env[varName]
@@ -75,6 +78,7 @@ async function ensureDefaultPlans() {
       supportLevel: "email",
       apiIntegration: true,
       dedicatedAccountManager: false,
+      stripePriceId: process.env.STRIPE_BASIC_PRICE_ID ?? "",
     },
     {
       code: "PRO",
@@ -89,6 +93,7 @@ async function ensureDefaultPlans() {
       supportLevel: "priority",
       apiIntegration: true,
       dedicatedAccountManager: false,
+      stripePriceId: process.env.STRIPE_PRO_PRICE_ID ?? "",
     },
     {
       code: "ENTERPRISE",
@@ -103,6 +108,7 @@ async function ensureDefaultPlans() {
       supportLevel: "dedicated",
       apiIntegration: true,
       dedicatedAccountManager: true,
+      stripePriceId: process.env.STRIPE_ENTERPRISE_PRICE_ID ?? "",
     },
   ];
 

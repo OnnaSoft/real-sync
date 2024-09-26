@@ -6,6 +6,8 @@ import { LinksFunction } from "@remix-run/node";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider } from "react-redux";
 import store from "./store";
+import { StripeProvider } from "./components/stripe";
+import { Toaster } from "./components/ui/toaster";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -32,12 +34,16 @@ export default function App() {
       <head>
         <link rel="icon" href="data:image/x-icon;base64,AA" />
         <Meta />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <Links />
       </head>
       <body>
         {isClient && (
           <Provider store={store}>
-            <AppContent />
+            <StripeProvider>
+              <Toaster />
+              <AppContent />
+            </StripeProvider>
           </Provider>
         )}
         <Scripts />

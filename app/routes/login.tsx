@@ -50,8 +50,8 @@ export default function LoginPage() {
       });
     },
     onSuccess: (data) => {
-      dispatch(login(data.user));
-      navigate("/dashboard"); // Redirect to dashboard on successful login
+      dispatch(login({ user: data.user, token: data.token }));
+      navigate("/dashboard");
     },
   });
 

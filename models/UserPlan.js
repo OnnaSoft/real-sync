@@ -9,6 +9,8 @@ import { DataTypes, Model, Sequelize } from "sequelize";
  * @property {Date|null} [cancelRequestedAt]
  * @property {Date|null} [effectiveCancelDate]
  * @property {'active' | 'pending_cancellation' | 'cancelled'} status
+ * @property {string} stripeSubscriptionId
+ * @property {string} stripeSubscriptionItemId
  */
 
 /**
@@ -24,7 +26,7 @@ const UserPlanModel = (sequelize) => {
    * @type {UserPlanModel}
    */
   const UserPlan = sequelize.define(
-    "userPlan",
+    "user-plan",
     {
       id: {
         type: DataTypes.INTEGER,
@@ -80,6 +82,14 @@ const UserPlanModel = (sequelize) => {
         type: DataTypes.ENUM("active", "pending_cancellation", "cancelled"),
         allowNull: false,
         defaultValue: "active",
+      },
+      stripeSubscriptionId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      stripeSubscriptionItemId: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
     },
     {

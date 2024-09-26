@@ -5,6 +5,7 @@ import "./db.js";
 import authRouter from "./routes/auth.js";
 import plansRouter from "./routes/plans.js";
 import usersRouter from "./routes/users.js";
+import paymentMethodRouter from "./routes/payment-methods.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -33,6 +34,9 @@ const build = viteDevServer
 app.use("/auth", authRouter);
 app.use("/plans", plansRouter);
 app.use("/users", usersRouter);
+app.use("/payment-methods", paymentMethodRouter);
+
+// @ts-ignore
 app.all("*", createRequestHandler({ build }));
 
 const PORT = process.env.PORT || 3000;

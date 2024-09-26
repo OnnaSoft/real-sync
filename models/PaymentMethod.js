@@ -11,7 +11,7 @@ import { Model, Sequelize } from "sequelize";
  * @property {string} expYear
  * @property {string} brand
  * @property {boolean} isDefault
- * @property {string} [stripePaymentMethodId]
+ * @property {string} stripePaymentMethodId
  */
 
 /**
@@ -24,7 +24,7 @@ import { Model, Sequelize } from "sequelize";
  */
 const PaymentMethodModel = (sequelize) => {
   const PaymentMethod = sequelize.define(
-    "paymentMethod",
+    "payment-method",
     {
       id: {
         type: DataTypes.INTEGER,
@@ -91,10 +91,7 @@ const PaymentMethodModel = (sequelize) => {
       },
       brand: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notEmpty: { msg: "Card brand is required" },
-        },
+        allowNull: true,
       },
       isDefault: {
         type: DataTypes.BOOLEAN,
@@ -103,7 +100,11 @@ const PaymentMethodModel = (sequelize) => {
       },
       stripePaymentMethodId: {
         type: DataTypes.STRING,
-        allowNull: true,
+        allowNull: false,
+        unique: true,
+        validate: {
+          notEmpty: { msg: "Stripe payment method ID is required" },
+        },
       },
     },
     {

@@ -20,6 +20,8 @@ export interface UserPlan {
   cancelRequestedAt: Date | null;
   effectiveCancelDate: Date | null;
   status: "active" | "pending_cancellation" | "cancelled";
+  stripeSubscriptionId: string;
+  stripeSubscriptionItemId: string;
 }
 
 export interface UserPlanWithPlan extends UserPlan {
