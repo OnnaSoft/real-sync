@@ -1,10 +1,11 @@
 import express from "express";
-import { User } from "../db.js"; // Assuming you've set up your models index file
+import { User, Plan, UserPlan, sequelize } from "../db.js";
 import { Op } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Resend } from "resend";
 import crypto from "node:crypto";
+import stripe from "../lib/stripe.js";
 
 const router = express.Router();
 
@@ -172,6 +173,8 @@ router.post(
   async (req, res) => {
     const { fullname, username, email, password } = req.body;
 
+    const transaction = await sequelize.transaction();
+
     try {
       // Check if user already exists
       const existingUser = await User.findOne({
@@ -181,6 +184,7 @@ router.post(
       });
 
       if (existingUser) {
+        await transaction.rollback();
         /** @type {ErrorsMap} */
         const errors = {};
         if (existingUser.getDataValue("username") === username) {
@@ -192,19 +196,63 @@ router.post(
         return res.status(400).json({ errors });
       }
 
-      // Create new user
-      const newUser = await User.create({
-        fullname,
-        username,
-        email,
-        password,
+      // Create Stripe customer
+      const stripeCustomer = await stripe.customers.create({
+        email: email,
+        name: fullname,
       });
 
+      // Create new user
+      const newUser = await User.create(
+        {
+          fullname,
+          username,
+          email,
+          password,
+          stripeCustomerId: stripeCustomer.id,
+        },
+        { transaction }
+      );
+
+      // Find the free plan
+      const freePlan = await Plan.findOne({
+        where: { code: "FREE" },
+      });
+
+      if (!freePlan) {
+        await transaction.rollback();
+        return res.status(500).json({
+          errors: { server: { message: "Free plan not found" } },
+        });
+      }
+
+      // Create Stripe subscription for the free plan
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomer.id,
+        items: [{ price: freePlan.getDataValue("stripePriceId") }],
+      });
+
+      // Assign the free plan to the user
+      await UserPlan.create(
+        {
+          userId: newUser.getDataValue("id"),
+          planId: freePlan.getDataValue("id"),
+          status: "active",
+          activatedAt: new Date(),
+          stripeSubscriptionId: subscription.id,
+          stripeSubscriptionItemId: subscription.items.data[0].id,
+        },
+        { transaction }
+      );
+
+      await transaction.commit();
+
       res.status(201).json({
-        message: "User registered successfully",
+        message: "User registered successfully and assigned free plan",
         userId: newUser.getDataValue("id"),
       });
     } catch (error) {
+      await transaction.rollback();
       /**
        * @type {import("sequelize").ValidationError}
        */

@@ -19,12 +19,11 @@ import { DataTypes, Model, Sequelize } from "sequelize";
 
 /**
  * @param {Sequelize} sequelize
- * @returns {UserPlanModel}
+ * @returns {UserPlanModel & {associate: (models: any) => void}}
  */
 const UserPlanModel = (sequelize) => {
-  /**
-   * @type {UserPlanModel}
-   */
+  /** @type {UserPlanModel & { associate: (models: any) => void }} */
+  // @ts-ignore
   const UserPlan = sequelize.define(
     "user-plan",
     {
@@ -135,27 +134,16 @@ const UserPlanModel = (sequelize) => {
     }
   );
 
+  UserPlan.associate =
+    /**
+     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
+     */
+    (models) => {
+      UserPlan.belongsTo(models.User, { foreignKey: "userId" });
+      UserPlan.belongsTo(models.Plan, { foreignKey: "planId" });
+    };
+
   return UserPlan;
 };
 
 export default UserPlanModel;
-
-/**
- * @typedef {Object} User
- * @property {number} id
- * @property {string} username
- * @property {string} email
- * @property {string} fullname
- */
-
-/**
- * @typedef {Object} Plan
- * @property {number} id
- * @property {string} name
- * @property {string} code
- * @property {string} price
- */
-
-/**
- * @typedef {UserPlanAttributes & {plan: Plan}} UserPlanWithPlan
- */

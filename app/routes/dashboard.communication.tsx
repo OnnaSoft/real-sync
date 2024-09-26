@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -19,14 +21,6 @@ import {
 import { Checkbox } from "../components/ui/checkbox";
 import { Label } from "../components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,166 +33,15 @@ import {
   Phone,
   Video,
   MessageSquare,
-  Key,
   Server,
 } from "lucide-react";
-
-interface ApiKey {
-  id: string;
-  key: string;
-  lastUsed: Date | null;
-}
-
-interface DedicatedServer {
-  size: string;
-  price: number;
-}
-
-interface App {
-  id: string;
-  name: string;
-  description: string;
-  enableCalls: boolean;
-  enableVideoCalls: boolean;
-  enableConversationLogging: boolean;
-  apiKeys: ApiKey[];
-  dedicatedServer: DedicatedServer | null;
-}
-
-const dedicatedServerOptions: DedicatedServer[] = [
-  { size: "Small", price: 20 },
-  { size: "Medium", price: 50 },
-  { size: "Large", price: 100 },
-  { size: "XLarge", price: 250 },
-  { size: "XXLarge", price: 500 },
-];
-
-// Simulación de un servicio de aplicaciones
-const appService = {
-  createApp: (app: Omit<App, "id" | "apiKeys">) =>
-    new Promise<App>((resolve) =>
-      setTimeout(
-        () =>
-          resolve({
-            ...app,
-            id: `app-${Date.now()}`,
-            apiKeys: [],
-          }),
-        1000
-      )
-    ),
-  updateApp: (app: App) =>
-    new Promise<App>((resolve) => setTimeout(() => resolve(app), 1000)),
-  deleteApp: (id: string) =>
-    new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-  createApiKey: (appId: string) =>
-    new Promise<ApiKey>((resolve) =>
-      setTimeout(
-        () =>
-          resolve({
-            id: `key-${Date.now()}`,
-            key: `api-${Math.random().toString(36).substr(2, 9)}`,
-            lastUsed: null,
-          }),
-        1000
-      )
-    ),
-  deleteApiKey: (appId: string, keyId: string) =>
-    new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-};
-
-function ApiKeysModal({
-  app,
-  onCreateKey,
-  onDeleteKey,
-}: {
-  app: App;
-  onCreateKey: () => void;
-  onDeleteKey: (keyId: string) => void;
-}) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Key className="h-4 w-4 mr-2" />
-          Manage API Keys
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-white">
-        <DialogHeader>
-          <DialogTitle>API Keys for {app.name}</DialogTitle>
-          <DialogDescription>
-            Create and manage API keys for this application.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4 mt-4">
-          {app.apiKeys.map((key) => (
-            <div key={key.id} className="flex items-center justify-between">
-              <div>
-                <code className="text-sm bg-gray-100 p-1 rounded">
-                  {key.key}
-                </code>
-                <p className="text-xs text-gray-500 mt-1">
-                  {key.lastUsed
-                    ? `Last used: ${key.lastUsed.toLocaleString()}`
-                    : "Never used"}
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDeleteKey(key.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <Button onClick={onCreateKey}>
-            <Key className="h-4 w-4 mr-2" />
-            Create New API Key
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import { useAppSelector } from "../store/hooks";
+import { App } from "~/models/app";
+import ApiKeysModal from "../components/ApiKeysModal";
+import { useAppManagement } from "../hooks/useAppManagement";
 
 export default function Communication() {
-  const [apps, setApps] = useState<App[]>([
-    {
-      id: "app-1",
-      name: "Chat App",
-      description: "Real-time messaging application",
-      enableCalls: true,
-      enableVideoCalls: false,
-      enableConversationLogging: true,
-      apiKeys: [
-        {
-          id: "key-1",
-          key: "api-abc123",
-          lastUsed: new Date(2023, 5, 15, 10, 30),
-        },
-        { id: "key-2", key: "api-def456", lastUsed: null },
-      ],
-      dedicatedServer: null,
-    },
-    {
-      id: "app-2",
-      name: "Video Conferencing",
-      description: "High-quality video calls",
-      enableCalls: true,
-      enableVideoCalls: true,
-      enableConversationLogging: false,
-      apiKeys: [
-        {
-          id: "key-3",
-          key: "api-ghi789",
-          lastUsed: new Date(2023, 6, 1, 14, 45),
-        },
-      ],
-      dedicatedServer: { size: "Medium", price: 50 },
-    },
-  ]);
+  const token = useAppSelector((state) => state.auth.token);
   const [newApp, setNewApp] = useState<Omit<App, "id" | "apiKeys">>({
     name: "",
     description: "",
@@ -209,10 +52,19 @@ export default function Communication() {
   });
   const [editingApp, setEditingApp] = useState<App | null>(null);
 
+  const {
+    apps,
+    createApiKey,
+    createApp,
+    dedicatedServerPlans,
+    deleteApiKey,
+    deleteApp,
+    updateApp,
+  } = useAppManagement(token as string);
+
   const handleCreateApp = async () => {
     try {
-      const createdApp = await appService.createApp(newApp);
-      setApps([...apps, createdApp]);
+      await createApp(newApp);
       setNewApp({
         name: "",
         description: "",
@@ -223,29 +75,24 @@ export default function Communication() {
       });
     } catch (error) {
       console.error("Error creating app:", error);
-      alert("Failed to create app. Please try again.");
     }
   };
 
   const handleUpdateApp = async () => {
     if (!editingApp) return;
     try {
-      const updatedApp = await appService.updateApp(editingApp);
-      setApps(apps.map((app) => (app.id === updatedApp.id ? updatedApp : app)));
+      await updateApp(editingApp);
       setEditingApp(null);
     } catch (error) {
       console.error("Error updating app:", error);
-      alert("Failed to update app. Please try again.");
     }
   };
 
   const handleDeleteApp = async (id: string) => {
     try {
-      await appService.deleteApp(id);
-      setApps(apps.filter((app) => app.id !== id));
+      await deleteApp(id);
     } catch (error) {
       console.error("Error deleting app:", error);
-      alert("Failed to delete app. Please try again.");
     }
   };
 
@@ -263,7 +110,7 @@ export default function Communication() {
   };
 
   const handleServerChange = (value: string) => {
-    const server = dedicatedServerOptions.find((s) => s.size === value) || null;
+    const server = dedicatedServerPlans.find((s) => s.size === value) || null;
     if (editingApp) {
       setEditingApp({ ...editingApp, dedicatedServer: server });
     } else {
@@ -273,31 +120,17 @@ export default function Communication() {
 
   const handleCreateApiKey = async (appId: string) => {
     try {
-      const newKey = await appService.createApiKey(appId);
-      setApps(
-        apps.map((app) =>
-          app.id === appId ? { ...app, apiKeys: [...app.apiKeys, newKey] } : app
-        )
-      );
+      await createApiKey(appId);
     } catch (error) {
       console.error("Error creating API key:", error);
-      alert("Failed to create API key. Please try again.");
     }
   };
 
   const handleDeleteApiKey = async (appId: string, keyId: string) => {
     try {
-      await appService.deleteApiKey(appId, keyId);
-      setApps(
-        apps.map((app) =>
-          app.id === appId
-            ? { ...app, apiKeys: app.apiKeys.filter((key) => key.id !== keyId) }
-            : app
-        )
-      );
+      await deleteApiKey({ appId, keyId });
     } catch (error) {
       console.error("Error deleting API key:", error);
-      alert("Failed to delete API key. Please try again.");
     }
   };
 
@@ -386,6 +219,7 @@ export default function Communication() {
                   newApp.dedicatedServer?.size ||
                   "-"
                 }
+                disabled={!!editingApp}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a server size" />
@@ -394,13 +228,13 @@ export default function Communication() {
                   <SelectItem value="-" className="cursor-pointer">
                     No dedicated server
                   </SelectItem>
-                  {dedicatedServerOptions.map((option) => (
+                  {dedicatedServerPlans.map((plan) => (
                     <SelectItem
-                      key={option.size}
+                      key={plan.id}
                       className="cursor-pointer"
-                      value={option.size}
+                      value={plan.size}
                     >
-                      {option.size} - ${option.price}/month
+                      {plan.size} - ${plan.price}/month
                     </SelectItem>
                   ))}
                 </SelectContent>

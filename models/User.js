@@ -15,14 +15,16 @@ import { Model, Sequelize } from "sequelize";
  */
 
 /**
- * @typedef {import("sequelize").ModelStatic<Model<UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry' | 'stripeCustomerId'>>>} UserModel
+ * @typedef {import("sequelize").ModelStatic<Model<UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry'>>>} UserModel
  */
 
 /**
  * @param {Sequelize} sequelize
- * @returns {UserModel}
+ * @returns {UserModel & {associate: (models: any) => void}}
  */
 const UserModel = (sequelize) => {
+  /** @type {UserModel & { associate: (models: any) => void }} */
+  // @ts-ignore
   const User = sequelize.define(
     "user",
     {
@@ -122,6 +124,16 @@ const UserModel = (sequelize) => {
       },
     }
   );
+
+  User.associate =
+    /**
+     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
+     */
+    (models) => {
+      User.hasMany(models.UserPlan, { foreignKey: "userId" });
+      User.hasMany(models.PaymentMethod, { foreignKey: "userId" });
+      User.hasMany(models.App, { foreignKey: "userId" });
+    };
 
   return User;
 };

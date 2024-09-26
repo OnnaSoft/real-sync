@@ -6,6 +6,8 @@ import authRouter from "./routes/auth.js";
 import plansRouter from "./routes/plans.js";
 import usersRouter from "./routes/users.js";
 import paymentMethodRouter from "./routes/payment-methods.js";
+import appDedicatedServerPlansRouter from "./routes/app-dedicated-server-plans.js";
+import appsRouter from "./routes/apps.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -35,6 +37,8 @@ app.use("/auth", authRouter);
 app.use("/plans", plansRouter);
 app.use("/users", usersRouter);
 app.use("/payment-methods", paymentMethodRouter);
+app.use("/app-dedicated-server-plans", appDedicatedServerPlansRouter);
+app.use("/apps", appsRouter);
 
 // @ts-ignore
 app.all("*", createRequestHandler({ build }));

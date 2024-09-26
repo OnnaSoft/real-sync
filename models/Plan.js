@@ -13,7 +13,7 @@ import { Model, Sequelize } from "sequelize";
  * @property {boolean} videoCalls
  * @property {number} maxApps
  * @property {number} secureConnections
- * @property {'email' | 'priority' | 'dedicated'} supportLevel
+ * @property {'community' | 'email' | 'priority' | 'dedicated'} supportLevel
  * @property {boolean} apiIntegration
  * @property {boolean} dedicatedAccountManager
  * @property {string} stripePriceId
@@ -25,9 +25,11 @@ import { Model, Sequelize } from "sequelize";
 
 /**
  * @param {Sequelize} sequelize
- * @returns {PlanModel}
+ * @returns {PlanModel & {associate: (models: any) => void}}
  */
 const PlanModel = (sequelize) => {
+  /** @type {PlanModel & { associate: (models: any) => void }} */
+  // @ts-ignore
   const Plan = sequelize.define(
     "plan",
     {
@@ -69,7 +71,7 @@ const PlanModel = (sequelize) => {
         },
       },
       billingPeriod: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM("monthly", "yearly"),
         allowNull: false,
         validate: {
           isIn: {
@@ -110,12 +112,12 @@ const PlanModel = (sequelize) => {
         },
       },
       supportLevel: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM("community", "email", "priority", "dedicated"),
         allowNull: false,
         validate: {
           isIn: {
-            args: [["email", "priority", "dedicated"]],
-            msg: "Support level must be either 'email', 'priority', or 'dedicated'",
+            args: [["community", "email", "priority", "dedicated"]],
+            msg: "Support level must be either 'community', 'email', 'priority', or 'dedicated'",
           },
         },
       },
@@ -142,6 +144,14 @@ const PlanModel = (sequelize) => {
       timestamps: true,
     }
   );
+
+  Plan.associate =
+    /**
+     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
+     */
+    (models) => {
+      Plan.hasMany(models.UserPlan, { foreignKey: "planId" });
+    };
 
   return Plan;
 };

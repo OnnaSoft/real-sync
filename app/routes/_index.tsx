@@ -15,7 +15,7 @@ import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Plans from "../components/Plans";
 
-export default function LandingPage() {
+export default function IndexPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Header />

@@ -17,7 +17,7 @@ const router = express.Router();
  * @typedef {Object} ProfileResponse
  * @property {string} message
  * @property {User} user
- * @property {UserPlanWithPlan} [currentPlan]
+ * @property {UserPlanWithPlan} currentPlan
  */
 
 router.get(
@@ -51,15 +51,27 @@ router.get(
       const response = {
         message: "User profile retrieved successfully",
         user: user,
-      };
-
-      if (userPlan) {
-        const userPlanJSON = userPlan.toJSON();
         // @ts-ignore
-        response.currentPlan = {
-          ...userPlanJSON,
-        };
-      }
+        currentPlan: userPlan
+          ? userPlan.toJSON()
+          : {
+              id: 0,
+              userId: user.id,
+              planId: 0,
+              status: "active",
+              activatedAt: new Date().toISOString(),
+              cancelRequestedAt: null,
+              effectiveCancelDate: null,
+              stripeSubscriptionId: null,
+              stripeSubscriptionItemId: null,
+              plan: {
+                id: 0,
+                name: "Free Plan",
+                code: "FREE",
+                price: "0",
+              },
+            },
+      };
 
       res.json(response);
     } catch (error) {
@@ -205,91 +217,6 @@ router.post(
       });
     } catch (error) {
       console.error("Error assigning plan to user:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
-    }
-  }
-);
-
-/**
- * @typedef {Object} CancelPlanResponse
- * @property {string} message
- * @property {UserPlanWithPlan} userPlan
- */
-
-router.post(
-  "/cancel-plan",
-  validateSessionToken,
-  /**
-   * POST /users/cancel-plan
-   * @param {express.Request & { user: User }} req
-   * @param {express.Response<CancelPlanResponse | ErrorResBody>} res
-   */
-  // @ts-ignore
-  async (req, res) => {
-    const userId = req.user.id;
-
-    try {
-      // Find the user's active plan
-      const userPlan = await UserPlan.findOne({
-        where: {
-          userId,
-          status: {
-            [Op.in]: ["active", "pending_cancellation"],
-          },
-        },
-        include: [
-          {
-            model: Plan,
-            attributes: ["id", "name", "code", "price", "stripePriceId"],
-          },
-        ],
-      });
-
-      if (!userPlan) {
-        return res.status(404).json({
-          errors: { plan: { message: "No active plan found for the user" } },
-        });
-      }
-
-      // Cancel the Stripe subscription at the end of the billing period
-      await stripe.subscriptions.update(
-        userPlan.getDataValue("stripeSubscriptionId"),
-        {
-          cancel_at_period_end: true,
-        }
-      );
-
-      // Update the plan status to pending_cancellation
-      await userPlan.update({
-        cancelRequestedAt: new Date(),
-      });
-
-      // The hook in the model will automatically set the status to pending_cancellation
-      // and calculate the effectiveCancelDate
-
-      // Fetch the updated user plan
-      const updatedUserPlan = await UserPlan.findByPk(
-        userPlan.getDataValue("id"),
-        {
-          include: [
-            {
-              model: Plan,
-              attributes: ["id", "name", "code", "price", "stripePriceId"],
-            },
-          ],
-        }
-      );
-
-      if (!updatedUserPlan) {
-        throw new Error("Failed to retrieve updated user plan");
-      }
-
-      res.status(200).json({
-        message: "Plan cancellation requested successfully",
-        userPlan: updatedUserPlan.toJSON(),
-      });
-    } catch (error) {
-      console.error("Error cancelling user plan:", error);
       res.status(500).json({ errors: { server: { message: "Server error" } } });
     }
   }

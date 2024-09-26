@@ -20,9 +20,11 @@ import { Model, Sequelize } from "sequelize";
 
 /**
  * @param {Sequelize} sequelize
- * @returns {PaymentMethodModel}
+ * @returns {PaymentMethodModel & {associate: (models: any) => void}}
  */
 const PaymentMethodModel = (sequelize) => {
+  /** @type {PaymentMethodModel & { associate: (models: any) => void }} */
+  // @ts-ignore
   const PaymentMethod = sequelize.define(
     "payment-method",
     {
@@ -42,7 +44,7 @@ const PaymentMethodModel = (sequelize) => {
         onDelete: "CASCADE",
       },
       type: {
-        type: DataTypes.STRING,
+        type: DataTypes.ENUM("credit", "debit"),
         allowNull: false,
         validate: {
           isIn: {
@@ -112,6 +114,17 @@ const PaymentMethodModel = (sequelize) => {
       paranoid: true,
     }
   );
+
+  PaymentMethod.associate =
+    /**
+     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
+     */
+    (models) => {
+      PaymentMethod.belongsTo(models.User, {
+        foreignKey: "userId",
+        as: "user",
+      });
+    };
 
   return PaymentMethod;
 };

@@ -36,17 +36,6 @@ interface Plan {
   dedicatedAccountManager: boolean;
 }
 
-interface UserPlan {
-  id: number;
-  userId: number;
-  planId: number;
-  status: string;
-  activatedAt: string;
-  cancelRequestedAt: string | null;
-  effectiveCancelDate: string | null;
-  plan: Plan;
-}
-
 const PlanCard: React.FC<{
   plan: Plan;
   isSelected: boolean;
@@ -138,7 +127,6 @@ const PlanCard: React.FC<{
 export default function ActivePlan() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [isChangePlanDialogOpen, setIsChangePlanDialogOpen] = useState(false);
-  const [isCancelPlanDialogOpen, setIsCancelPlanDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const token = useAppSelector((state) => state.auth.token);
@@ -212,38 +200,6 @@ export default function ActivePlan() {
     },
   });
 
-  const cancelPlanMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/users/cancel-plan", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to cancel plan");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
-      setIsCancelPlanDialogOpen(false);
-      toast({
-        title: "Plan cancellation requested",
-        description: "Your plan cancellation request has been processed.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error cancelling plan",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   const handlePlanSelection = (planId: number) => {
     setSelectedPlanId(planId);
     setIsChangePlanDialogOpen(true);
@@ -253,10 +209,6 @@ export default function ActivePlan() {
     if (selectedPlanId) {
       assignPlanMutation.mutate(selectedPlanId);
     }
-  };
-
-  const handlePlanCancel = () => {
-    cancelPlanMutation.mutate();
   };
 
   if (isLoadingPlans || isLoadingProfile) {
@@ -293,28 +245,6 @@ export default function ActivePlan() {
                 <strong>Activated:</strong>{" "}
                 {new Date(currentPlan.activatedAt).toLocaleDateString()}
               </p>
-              {currentPlan.status === "pending_cancellation" && (
-                <p>
-                  <strong>Cancellation Status:</strong> Pending
-                </p>
-              )}
-              {currentPlan.effectiveCancelDate && (
-                <p>
-                  <strong>Effective Cancel Date:</strong>{" "}
-                  {new Date(
-                    currentPlan.effectiveCancelDate
-                  ).toLocaleDateString()}
-                </p>
-              )}
-              {currentPlan.status !== "pending_cancellation" && (
-                <Button
-                  onClick={() => setIsCancelPlanDialogOpen(true)}
-                  variant="destructive"
-                  className="mt-4"
-                >
-                  Cancel Plan
-                </Button>
-              )}
             </div>
           ) : (
             <p>No active plan. Select a plan below to get started.</p>
@@ -344,6 +274,13 @@ export default function ActivePlan() {
             <DialogTitle>Confirm Plan Change</DialogTitle>
             <DialogDescription>
               Are you sure you want to change your plan to {selectedPlan?.name}?
+              {selectedPlan?.code === "FREE" &&
+                currentPlan?.plan.code !== "FREE" && (
+                  <p className="mt-2 text-yellow-600">
+                    Note: Switching to the Free plan will immediately end your
+                    current subscription.
+                  </p>
+                )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -358,38 +295,6 @@ export default function ActivePlan() {
               disabled={assignPlanMutation.isPending}
             >
               {assignPlanMutation.isPending ? "Updating..." : "Confirm"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={isCancelPlanDialogOpen}
-        onOpenChange={setIsCancelPlanDialogOpen}
-      >
-        <DialogContent className="bg-white">
-          <DialogHeader>
-            <DialogTitle>Confirm Plan Cancellation</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to cancel your current plan? This action
-              cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCancelPlanDialogOpen(false)}
-            >
-              Keep Plan
-            </Button>
-            <Button
-              onClick={handlePlanCancel}
-              disabled={cancelPlanMutation.isPending}
-              variant="destructive"
-            >
-              {cancelPlanMutation.isPending
-                ? "Cancelling..."
-                : "Confirm Cancellation"}
             </Button>
           </DialogFooter>
         </DialogContent>
