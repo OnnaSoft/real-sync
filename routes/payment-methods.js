@@ -3,11 +3,12 @@ import { PaymentMethod, User, sequelize } from "../db.js";
 import validateSessionToken from "../middlewares/validateSessionToken.js";
 import { body, validationResult } from "express-validator";
 import stripe from "../lib/stripe.js";
+import { HttpError } from "http-errors-enhanced";
+import { Transaction } from "sequelize";
 
 const router = express.Router();
 
 /**
- * @typedef {import('../types/http.d.ts').ErrorResBody} ErrorResBody
  * @typedef {import('../types/http.d.ts').ErrorsMap} ErrorsMap
  */
 
@@ -58,14 +59,17 @@ router.get(
   /**
    * GET /payment-methods
    * @param {express.Request & { user: import('../types/models').User }} req
-   * @param {express.Response<GetPaymentMethodsSuccessResBody | ErrorResBody>} res
+   * @param {express.Response<GetPaymentMethodsSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const paymentMethods = await PaymentMethod.findAll({
         where: { userId: req.user.id },
         order: [["createdAt", "DESC"]],
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving payment methods");
       });
 
       res.status(200).json({
@@ -74,8 +78,7 @@ router.get(
         data: paymentMethods.map((pm) => pm.toJSON()),
       });
     } catch (error) {
-      console.error("Error fetching payment methods:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -102,32 +105,42 @@ router.post(
   validatePaymentMethod,
   /**
    * POST /payment-methods
-   * @param {express.Request<{}, AddPaymentMethodSuccessResBody | ErrorResBody, AddPaymentMethodBody> & { user: import('../types/models').User }} req
-   * @param {express.Response<AddPaymentMethodSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<{}, AddPaymentMethodSuccessResBody, AddPaymentMethodBody> & { user: import('../types/models').User }} req
+   * @param {express.Response<AddPaymentMethodSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       /** @type {ErrorsMap} */
       const errorMap = {};
-      errors.array().forEach((error, index) => {
+      errors.array().forEach((error) => {
         // @ts-ignore
         errorMap[error.path] = { message: error.msg };
       });
-      return res.status(400).json({ errors: errorMap });
+      throw new HttpError(400, "Validation error", { errors: errorMap });
     }
 
     const { type, last4, expMonth, expYear, brand, stripePaymentMethodId } =
       req.body;
 
-    const transaction = await sequelize.transaction();
+    /** @type{Transaction | null} */
+    let transaction = null;
 
     try {
-      const user = await User.findByPk(req.user.id);
+      transaction = await sequelize.transaction().catch(() => {
+        throw new HttpError(500, "Error starting transaction");
+      });
+
+      const user = await User.findByPk(req.user.id).catch(() => {
+        throw new HttpError(500, "Error retrieving user");
+      });
       if (!user) {
-        await transaction.rollback();
-        return res.status(404).json({
+        await transaction.rollback().catch(() => {
+          throw new HttpError(500, "Error rolling back transaction");
+        });
+        throw new HttpError(404, "User not found", {
           errors: { user: { message: "User not found" } },
         });
       }
@@ -136,25 +149,37 @@ router.post(
 
       if (!stripeCustomerId) {
         // Create a new Stripe customer
-        const customer = await stripe.customers.create({
-          email: user.getDataValue("email"),
-          name: user.getDataValue("fullname"),
-        });
+        const customer = await stripe.customers
+          .create({
+            email: user.getDataValue("email"),
+            name: user.getDataValue("fullname"),
+          })
+          .catch(() => {
+            throw new HttpError(500, "Error creating Stripe customer");
+          });
 
         stripeCustomerId = customer.id;
 
         // Update the user with the new Stripe customer ID
-        await user.update({ stripeCustomerId }, { transaction });
+        await user.update({ stripeCustomerId }, { transaction }).catch(() => {
+          throw new HttpError(500, "Error updating user");
+        });
       }
 
       // Attach the payment method to the Stripe customer
-      await stripe.paymentMethods.attach(stripePaymentMethodId, {
-        customer: stripeCustomerId,
-      });
+      await stripe.paymentMethods
+        .attach(stripePaymentMethodId, {
+          customer: stripeCustomerId,
+        })
+        .catch(() => {
+          throw new HttpError(500, "Error attaching payment method");
+        });
 
       const existingDefaultMethod = await PaymentMethod.findOne({
         where: { userId: req.user.id, isDefault: true },
         transaction,
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving payment method");
       });
 
       const newPaymentMethod = await PaymentMethod.create(
@@ -169,37 +194,43 @@ router.post(
           stripePaymentMethodId,
         },
         { transaction }
-      );
+      ).catch(() => {
+        throw new HttpError(500, "Error creating payment method");
+      });
 
       // If this is the first payment method, set it as the default for the customer
       if (!existingDefaultMethod) {
-        await stripe.customers.update(stripeCustomerId, {
-          invoice_settings: { default_payment_method: stripePaymentMethodId },
-        });
+        await stripe.customers
+          .update(stripeCustomerId, {
+            invoice_settings: { default_payment_method: stripePaymentMethodId },
+          })
+          .catch(() => {
+            throw new HttpError(500, "Error updating default payment method");
+          });
       }
 
-      await transaction.commit();
+      await transaction.commit().catch(() => {
+        throw new HttpError(500, "Error committing transaction");
+      });
 
       res.status(201).json({
         message: "Payment method added successfully",
         paymentMethod: newPaymentMethod.toJSON(),
       });
     } catch (error) {
-      await transaction.rollback();
+      if (transaction) await transaction.rollback();
       /** @type {Error} */
       // @ts-ignore
       const err = error;
       if (err.name === "SequelizeUniqueConstraintError") {
-        res.status(400).json({
+        const newError = new HttpError(400, "Payment method exists", {
           errors: {
             stripePaymentMethodId: { message: "Payment method exists" },
           },
         });
-        return;
+        return next(newError);
       }
-      console.error("Error adding payment method:", err);
-
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -230,11 +261,12 @@ router.put(
   validatePaymentMethod,
   /**
    * PUT /payment-methods/:id
-   * @param {express.Request<UpdatePaymentMethodParams, UpdatePaymentMethodSuccessResBody | ErrorResBody, UpdatePaymentMethodBody> & { user: import('../types/models').User }} req
-   * @param {express.Response<UpdatePaymentMethodSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<UpdatePaymentMethodParams, UpdatePaymentMethodSuccessResBody, UpdatePaymentMethodBody> & { user: import('../types/models').User }} req
+   * @param {express.Response<UpdatePaymentMethodSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       /** @type {ErrorsMap} */
@@ -243,7 +275,7 @@ router.put(
         // @ts-ignore
         errorMap[error.path] = { message: error.msg };
       });
-      return res.status(400).json({ errors: errorMap });
+      throw new HttpError(400, "Validation error", { errors: errorMap });
     }
 
     const { id } = req.params;
@@ -252,34 +284,44 @@ router.put(
     try {
       const paymentMethod = await PaymentMethod.findOne({
         where: { id, userId: req.user.id },
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving payment method");
       });
 
       if (!paymentMethod) {
-        return res.status(404).json({
+        throw new HttpError(404, "Payment method not found", {
           errors: { id: { message: "Payment method not found" } },
         });
       }
 
       // Update the payment method in Stripe
-      await stripe.paymentMethods.update(
-        paymentMethod.getDataValue("stripePaymentMethodId"),
-        {
+      await stripe.paymentMethods
+        .update(paymentMethod.getDataValue("stripePaymentMethodId"), {
           card: {
             exp_month: parseInt(expMonth ?? "0"),
             exp_year: parseInt(expYear ?? "0"),
           },
-        }
-      );
+        })
+        .catch((error) => {
+          throw new HttpError(500, "Error updating payment method", {
+            errors: { server: { message: error.message } },
+          });
+        });
 
-      await paymentMethod.update({ type, last4, expMonth, expYear, brand });
+      await paymentMethod
+        .update({ type, last4, expMonth, expYear, brand })
+        .catch((error) => {
+          throw new HttpError(500, "Error updating payment method", {
+            errors: { server: { message: error.message } },
+          });
+        });
 
       res.status(200).json({
         message: "Payment method updated successfully",
         paymentMethod: paymentMethod.toJSON(),
       });
     } catch (error) {
-      console.error("Error updating payment method:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -299,26 +341,29 @@ router.delete(
   validateSessionToken,
   /**
    * DELETE /payment-methods/:id
-   * @param {express.Request<DeletePaymentMethodParams, DeletePaymentMethodSuccessResBody | ErrorResBody> & { user: import('../types/models').User}} req
-   * @param {express.Response<DeletePaymentMethodSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<DeletePaymentMethodParams, DeletePaymentMethodSuccessResBody> & { user: import('../types/models').User}} req
+   * @param {express.Response<DeletePaymentMethodSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const { id } = req.params;
 
     try {
       const paymentMethod = await PaymentMethod.findOne({
         where: { id, userId: req.user.id },
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving payment method");
       });
 
       if (!paymentMethod) {
-        return res.status(404).json({
+        throw new HttpError(404, "Payment method not found", {
           errors: { id: { message: "Payment method not found" } },
         });
       }
 
       if (paymentMethod.getDataValue("isDefault")) {
-        return res.status(400).json({
+        throw new HttpError(400, "Cannot delete default payment method", {
           errors: {
             id: { message: "Cannot delete the default payment method" },
           },
@@ -326,16 +371,19 @@ router.delete(
       }
 
       // Detach the payment method from the Stripe customer
-      await stripe.paymentMethods.detach(
-        paymentMethod.getDataValue("stripePaymentMethodId")
-      );
+      await stripe.paymentMethods
+        .detach(paymentMethod.getDataValue("stripePaymentMethodId"))
+        .catch(() => {
+          throw new HttpError(500, "Error deleting payment method");
+        });
 
-      await paymentMethod.destroy();
+      await paymentMethod.destroy().catch(() => {
+        throw new HttpError(500, "Error deleting payment method");
+      });
 
       res.status(200).json({ message: "Payment method deleted successfully" });
     } catch (error) {
-      console.error("Error deleting payment method:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -355,80 +403,92 @@ router.post(
   validateSessionToken,
   /**
    * POST /payment-methods/:id/set-default
-   * @param {express.Request<SetDefaultPaymentMethodParams, SetDefaultPaymentMethodSuccessResBody | ErrorResBody> & { user: import('../types/models').User}} req
-   * @param {express.Response<SetDefaultPaymentMethodSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<SetDefaultPaymentMethodParams, SetDefaultPaymentMethodSuccessResBody> & { user: import('../types/models').User}} req
+   * @param {express.Response<SetDefaultPaymentMethodSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const { id } = req.params;
 
+    /** @type {Transaction | null} */
+    let transaction = null;
     try {
       // Start a transaction
-      const transaction = await sequelize.transaction();
+      transaction = await sequelize.transaction().catch(() => {
+        throw new HttpError(500, "Error starting transaction");
+      });
 
-      try {
-        const user = await User.findByPk(req.user.id);
-        if (!user) {
-          throw new Error("User not found");
+      const user = await User.findByPk(req.user.id);
+      if (!user) {
+        throw new HttpError(404, "User not found", {
+          errors: { user: { message: "User not found" } },
+        });
+      }
+
+      // Set all payment methods for this user to non-default
+      await PaymentMethod.update(
+        { isDefault: false },
+        {
+          where: { userId: req.user.id },
+          transaction,
         }
+      ).catch(() => {
+        throw new HttpError(500, "Error updating payment methods");
+      });
 
-        // Set all payment methods for this user to non-default
-        await PaymentMethod.update(
-          { isDefault: false },
-          {
-            where: { userId: req.user.id },
-            transaction,
-          }
-        );
-
-        // Set the specified payment method as default
-        const [updatedRows] = await PaymentMethod.update(
-          { isDefault: true },
-          {
-            where: { id, userId: req.user.id },
-            transaction,
-          }
-        );
-
-        if (updatedRows === 0) {
-          await transaction.rollback();
-          return res.status(404).json({
-            errors: { id: { message: "Payment method not found" } },
-          });
+      // Set the specified payment method as default
+      const [updatedRows] = await PaymentMethod.update(
+        { isDefault: true },
+        {
+          where: { id, userId: req.user.id },
+          transaction,
         }
+      );
 
-        const updatedPaymentMethod = await PaymentMethod.findByPk(id);
-        if (!updatedPaymentMethod) {
-          throw new Error("Updated payment method not found");
-        }
+      if (updatedRows === 0) {
+        await transaction.rollback().catch(() => {
+          throw new HttpError(500, "Error rolling back transaction");
+        });
+        throw new HttpError(404, "Payment method not found", {
+          errors: { id: { message: "Payment method not found" } },
+        });
+      }
 
-        // Update the default payment method in Stripe
-        const stripeCustomerId = user.getDataValue("stripeCustomerId");
-        if (!stripeCustomerId) {
-          throw new Error("User does not have a Stripe customer ID");
-        }
-        await stripe.customers.update(stripeCustomerId, {
+      const updatedPaymentMethod = await PaymentMethod.findByPk(id);
+      if (!updatedPaymentMethod) {
+        throw new Error("Updated payment method not found");
+      }
+
+      // Update the default payment method in Stripe
+      const stripeCustomerId = user.getDataValue("stripeCustomerId");
+      if (!stripeCustomerId) {
+        throw new Error("User does not have a Stripe customer ID");
+      }
+      await stripe.customers
+        .update(stripeCustomerId, {
           invoice_settings: {
             default_payment_method: updatedPaymentMethod.getDataValue(
               "stripePaymentMethodId"
             ),
           },
+        })
+        .catch(() => {
+          throw new HttpError(500, "Error updating default payment method");
         });
 
-        // Commit the transaction
-        await transaction.commit();
+      // Commit the transaction
+      await transaction.commit().catch(() => {
+        throw new HttpError(500, "Error committing transaction");
+      });
 
-        res
-          .status(200)
-          .json({ message: "Payment method set as default successfully" });
-      } catch (error) {
-        // If there's an error, rollback the transaction
-        await transaction.rollback();
-        throw error;
-      }
+      res
+        .status(200)
+        .json({ message: "Payment method set as default successfully" });
     } catch (error) {
-      console.error("Error setting default payment method:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      // If there's an error, rollback the transaction
+      if (transaction) await transaction.rollback();
+      next(error);
     }
   }
 );

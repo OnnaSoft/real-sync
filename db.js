@@ -1,15 +1,12 @@
 import { Sequelize } from "sequelize";
 import UserModel from "./models/User.js";
-import dotenv from "dotenv";
 import PlanModel from "./models/Plan.js";
 import UserPlanModel from "./models/UserPlan.js";
 import PaymentMethodModel from "./models/PaymentMethod.js";
 import AppModel from "./models/App.js";
 import ApiKeyModel from "./models/ApiKey.js";
 import DedicatedServerPlanModel from "./models/DedicatedServerPlan.js";
-
-// Load environment variables
-dotenv.config();
+import StripeEventModel from "./models/StripeEvent.js";
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -59,6 +56,7 @@ export const PaymentMethod = PaymentMethodModel(sequelize);
 export const DedicatedServerPlan = DedicatedServerPlanModel(sequelize);
 export const App = AppModel(sequelize);
 export const ApiKey = ApiKeyModel(sequelize);
+export const StripeEvent = StripeEventModel(sequelize);
 
 // Define associations
 /** @type {{ [x:string]: import("sequelize").ModelStatic<import("sequelize").Model> & { associate: (models: any) => void } }} */
@@ -70,6 +68,7 @@ const models = {
   DedicatedServerPlan,
   App,
   ApiKey,
+  StripeEvent,
 };
 Object.values(models).forEach((model) => {
   if (model.associate) model.associate(models);

@@ -1,5 +1,6 @@
 import express from "express";
 import { Plan } from "../db.js"; // Asumiendo que has configurado el archivo index de modelos
+import { HttpError } from "http-errors-enhanced";
 
 const router = express.Router();
 
@@ -27,20 +28,19 @@ const router = express.Router();
  * @property {PlanData[]} data - Array de datos de planes
  */
 
-/**
- * @typedef {import('../types/http.d.ts').ErrorResBody} ErrorResBody
- */
-
 router.get(
   "/",
   /**
    * GET /plans
    * @param {express.Request} req
-   * @param {express.Response<GetPlansSuccessResBody | ErrorResBody>} res
+   * @param {express.Response<GetPlansSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
-  async (req, res) => {
+  async (req, res, next) => {
     try {
-      const plans = await Plan.findAll();
+      const plans = await Plan.findAll().catch((error) => {
+        throw new HttpError(500, "Error retrieving plans");
+      });
 
       const planData = plans.map((plan) => ({
         id: plan.getDataValue("id"),
@@ -64,8 +64,7 @@ router.get(
         data: planData,
       });
     } catch (error) {
-      console.error("Error retrieving plans:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );

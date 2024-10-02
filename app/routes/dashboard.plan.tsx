@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Button } from "../components/ui/button";
 import { useToast } from "../hooks/use-toast";
 import {
@@ -16,32 +16,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../components/ui/dialog";
-import { Check, X } from "lucide-react";
+import { ArrowRight, Check, CreditCard, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "../store/hooks";
-
-interface Plan {
-  id: number;
-  name: string;
-  code: string;
-  price: string;
-  billingPeriod: string;
-  realTimeChat: boolean;
-  voiceCalls: boolean;
-  videoCalls: boolean;
-  maxApps: number;
-  secureConnections: number;
-  supportLevel: string;
-  apiIntegration: boolean;
-  dedicatedAccountManager: boolean;
-}
+import useFetch from "../hooks/useFetch";
+import { Link } from "@remix-run/react";
+import { Plan } from "../models/plan";
+import { Profile } from "../models/profile";
 
 const PlanCard: React.FC<{
   plan: Plan;
+  userProfile?: Profile;
   isSelected: boolean;
   isCurrentPlan: boolean;
   onSelect: (planId: number) => void;
-}> = ({ plan, isSelected, isCurrentPlan, onSelect }) => {
+}> = ({ plan, userProfile, isSelected, isCurrentPlan, onSelect }) => {
   return (
     <Card className={`bg-white ${isSelected ? "border-primary" : ""}`}>
       <CardHeader>
@@ -85,13 +74,13 @@ const PlanCard: React.FC<{
             <Check className="text-green-500 mr-2" />
             {plan.secureConnections === 0
               ? "Unlimited"
-              : plan.secureConnections}{" "}
+              : plan.secureConnections}
             secure connection{plan.secureConnections !== 1 ? "s" : ""}
           </li>
           <li className="flex items-center">
             <Check className="text-green-500 mr-2" />
             {plan.supportLevel.charAt(0).toUpperCase() +
-              plan.supportLevel.slice(1)}{" "}
+              plan.supportLevel.slice(1)}
             support
           </li>
           <li className="flex items-center">
@@ -111,14 +100,16 @@ const PlanCard: React.FC<{
             Dedicated account manager
           </li>
         </ul>
-        <Button
-          className="mt-4 w-full"
-          variant={isCurrentPlan ? "secondary" : "default"}
-          onClick={() => onSelect(plan.id)}
-          disabled={isCurrentPlan}
-        >
-          {isCurrentPlan ? "Current Plan" : "Select Plan"}
-        </Button>
+        {userProfile?.hasPaymentMethod && (
+          <Button
+            className="mt-4 w-full"
+            variant={isCurrentPlan ? "secondary" : "default"}
+            onClick={() => onSelect(plan.id)}
+            disabled={isCurrentPlan}
+          >
+            {isCurrentPlan ? "Current Plan" : "Select Plan"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -130,6 +121,7 @@ export default function ActivePlan() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const token = useAppSelector((state) => state.auth.token);
+  const fetch = useFetch();
 
   const {
     data: plans,
@@ -147,6 +139,9 @@ export default function ActivePlan() {
       const data = await response.json();
       return data.data;
     },
+    retry: true,
+    retryDelay: 5000,
+    refetchInterval: 60000 * 5,
   });
 
   const {
@@ -155,15 +150,19 @@ export default function ActivePlan() {
     error: profileError,
   } = useQuery({
     queryKey: ["userProfile"],
-    queryFn: async () => {
+    queryFn: async (): Promise<Profile> => {
       const response = await fetch("/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (!response.ok) {
         throw new Error("Failed to fetch user profile");
       }
       return response.json();
     },
+    retry: true,
+    retryDelay: 5000,
+    refetchInterval: 60000 * 5,
   });
 
   const assignPlanMutation = useMutation({
@@ -176,8 +175,10 @@ export default function ActivePlan() {
         },
         body: JSON.stringify({ planId }),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.log(errorData);
         throw new Error(errorData.message || "Failed to assign plan");
       }
       return response.json();
@@ -220,7 +221,9 @@ export default function ActivePlan() {
   }
 
   const currentPlan = userProfile?.currentPlan;
-  const selectedPlan = plans?.find((plan) => plan.id === selectedPlanId);
+  const selectedPlan = (plans ?? [])?.find(
+    (plan) => plan.id === selectedPlanId
+  );
 
   return (
     <div className="space-y-6">
@@ -238,11 +241,11 @@ export default function ActivePlan() {
                 <strong>Plan:</strong> {currentPlan.plan.name}
               </p>
               <p>
-                <strong>Price:</strong> ${currentPlan.plan.price} /{" "}
+                <strong>Price:</strong> ${currentPlan.plan.price} /
                 {currentPlan.plan.billingPeriod}
               </p>
               <p>
-                <strong>Activated:</strong>{" "}
+                <strong>Activated:</strong>
                 {new Date(currentPlan.activatedAt).toLocaleDateString()}
               </p>
             </div>
@@ -252,18 +255,44 @@ export default function ActivePlan() {
         </CardContent>
       </Card>
 
-      <h3 className="text-xl font-semibold">Available Plans</h3>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {plans?.map((plan) => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            isSelected={plan.id === selectedPlanId}
-            isCurrentPlan={plan.id === currentPlan?.plan.id}
-            onSelect={handlePlanSelection}
-          />
-        ))}
-      </div>
+      {!userProfile?.hasPaymentMethod && (
+        <Card className="bg-white">
+          <CardHeader>
+            <CardTitle>Payment Methods</CardTitle>
+            <CardDescription>Manage your payment information</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">
+              No payment method added yet. Add a payment method to unlock
+              premium features.
+            </p>
+            <Button asChild>
+              <Link to="/dashboard/payment-methods">
+                <CreditCard className="mr-2 h-4 w-4" />
+                Manage Payment Method <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {userProfile?.hasPaymentMethod && (
+        <Fragment>
+          <h3 className="text-xl font-semibold">Available Plans</h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {plans?.map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                userProfile={userProfile}
+                isSelected={plan.id === selectedPlanId}
+                isCurrentPlan={plan.id === currentPlan?.plan.id}
+                onSelect={handlePlanSelection}
+              />
+            ))}
+          </div>
+        </Fragment>
+      )}
 
       <Dialog
         open={isChangePlanDialogOpen}

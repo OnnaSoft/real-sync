@@ -1,16 +1,21 @@
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";
-import dotenv from "dotenv";
+import "./init.js";
 import "./db.js";
-import authRouter from "./routes/auth.js";
-import plansRouter from "./routes/plans.js";
-import usersRouter from "./routes/users.js";
-import paymentMethodRouter from "./routes/payment-methods.js";
-import appDedicatedServerPlansRouter from "./routes/app-dedicated-server-plans.js";
-import appsRouter from "./routes/apps.js";
+import api from "./routes/index.js";
 
-// Load environment variables from .env file
-dotenv.config();
+// Validate environment variables
+const requiredEnvVars = ["PORT"];
+const missingEnvVars = requiredEnvVars.filter(
+  (varName) => !process.env[varName]
+);
+
+if (missingEnvVars.length > 0) {
+  console.error(
+    `Missing required environment variables: ${missingEnvVars.join(", ")}`
+  );
+  process.exit(1);
+}
 
 const viteDevServer =
   process.env.NODE_ENV === "production"
@@ -23,7 +28,7 @@ const viteDevServer =
       );
 
 const app = express();
-app.use(express.json());
+
 app.use(
   viteDevServer ? viteDevServer.middlewares : express.static("build/client")
 );
@@ -33,12 +38,7 @@ const build = viteDevServer
   : // @ts-ignore
     await import("./build/server/index.js");
 
-app.use("/auth", authRouter);
-app.use("/plans", plansRouter);
-app.use("/users", usersRouter);
-app.use("/payment-methods", paymentMethodRouter);
-app.use("/app-dedicated-server-plans", appDedicatedServerPlansRouter);
-app.use("/apps", appsRouter);
+app.use("/", api);
 
 // @ts-ignore
 app.all("*", createRequestHandler({ build }));

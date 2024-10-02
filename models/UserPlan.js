@@ -8,7 +8,7 @@ import { DataTypes, Model, Sequelize } from "sequelize";
  * @property {Date} activatedAt
  * @property {Date|null} [cancelRequestedAt]
  * @property {Date|null} [effectiveCancelDate]
- * @property {'active' | 'pending_cancellation' | 'cancelled'} status
+ * @property {'active' | 'pending_cancellation' | 'inactive' | 'cancelled'} status
  * @property {string} stripeSubscriptionId
  * @property {string} stripeSubscriptionItemId
  */

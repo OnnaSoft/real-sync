@@ -1,12 +1,11 @@
 import express from "express";
 import { DedicatedServerPlan } from "../db.js";
-import validateSessionToken from "../middlewares/validateSessionToken.js";
+import { HttpError } from "http-errors-enhanced";
 
 const router = express.Router();
 
 /**
  * @typedef {import('../types/models.js').DedicatedServerPlan} DedicatedServerPlan
- * @typedef {import('../types/http.js').ErrorResBody} ErrorResBody
  */
 
 /**
@@ -18,16 +17,18 @@ const router = express.Router();
 
 router.get(
   "/",
-  validateSessionToken,
   /**
    * GET /dedicated-server-plans
    * @param {express.Request} req
-   * @param {express.Response<GetDedicatedServerPlansResponse | ErrorResBody>} res
+   * @param {express.Response<GetDedicatedServerPlansResponse>} res
+   * @param {express.NextFunction} next
    */
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const plans = await DedicatedServerPlan.findAll({
         order: [["price", "ASC"]],
+      }).catch((error) => {
+        throw new HttpError(500, "Error retrieving dedicated server plans");
       });
       const plainPlans = plans.map((plan) => plan.toJSON());
       res.json({
@@ -36,8 +37,7 @@ router.get(
         total: plans.length,
       });
     } catch (error) {
-      console.error("Error retrieving dedicated server plans:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -50,18 +50,20 @@ router.get(
 
 router.get(
   "/:id",
-  validateSessionToken,
   /**
    * GET /dedicated-server-plans/:id
    * @param {express.Request<{ id: string }>} req
-   * @param {express.Response<GetDedicatedServerPlanResponse | ErrorResBody>} res
+   * @param {express.Response<GetDedicatedServerPlanResponse>} res
+   * @param {express.NextFunction} next
    */
-  async (req, res) => {
+  async (req, res, next) => {
     const { id } = req.params;
     try {
-      const plan = await DedicatedServerPlan.findByPk(id);
+      const plan = await DedicatedServerPlan.findByPk(id).catch((error) => {
+        throw new HttpError(500, "Error retrieving dedicated server plan");
+      });
       if (!plan) {
-        return res.status(404).json({
+        throw new HttpError(404, "Dedicated server plan not found", {
           errors: { plan: { message: "Dedicated server plan not found" } },
         });
       }
@@ -70,8 +72,7 @@ router.get(
         data: plan.toJSON(),
       });
     } catch (error) {
-      console.error("Error retrieving dedicated server plan:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );

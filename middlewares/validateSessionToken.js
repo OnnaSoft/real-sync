@@ -8,7 +8,6 @@ import { User } from "../db.js";
  * @returns
  */
 const validateSessionToken = (req, res, next) => {
-  const request = req;
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -18,32 +17,33 @@ const validateSessionToken = (req, res, next) => {
 
   jwt.verify(
     token,
-    process.env.JWT_SECRET,
+    process.env.JWT_SECRET ?? "",
     /**
-     *
-     * @param {Error} err
-     * @param {import('../types/http').Session} session
+     * @param {jwt.VerifyErrors | null} err
+     * @param {string | jwt.JwtPayload | undefined} session
      * @returns
      */
     async (err, session) => {
-      if (err) {
-        return res.status(403).json({ error: "Invalid token" });
-      }
+      const unauthorizedError = { error: "Unauthorized" };
+      if (err) return res.status(404).json(unauthorizedError);
+      if (!session) return res.status(404).json(unauthorizedError);
+      if (typeof session === "string")
+        return res.status(404).json(unauthorizedError);
+
       try {
         const user = await User.findOne({ where: { id: session.userId } });
-        if (!user) {
-          return res.status(404).json({ error: "User not found" });
-        }
+        if (!user) return res.status(404).json(unauthorizedError);
 
         req.user = {
           id: user.getDataValue("id"),
           username: user.getDataValue("username"),
           email: user.getDataValue("email"),
           fullname: user.getDataValue("fullname"),
+          stripeCustomerId: user.getDataValue("stripeCustomerId"),
+          userPlans: [],
         };
         next();
       } catch (error) {
-        console.error(error);
         return res.status(500).json({ error: "Internal server error" });
       }
     }

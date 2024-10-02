@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
@@ -18,9 +17,10 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
-import { Download, CreditCard } from "lucide-react";
+import { Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppSelector } from "../store/hooks";
+import useFetch from "../hooks/useFetch";
 
 interface BillingHistory {
   id: string;
@@ -100,6 +100,7 @@ const fakeBillingHistory: BillingHistory[] = [
 export default function Billing() {
   const [billingHistory] = useState<BillingHistory[]>(fakeBillingHistory);
   const token = useAppSelector((state) => state.auth.token);
+  const fetch = useFetch();
 
   const {
     data: userProfile,

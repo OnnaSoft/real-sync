@@ -10,6 +10,8 @@ import {
 } from "../db.js";
 import validateSessionToken from "../middlewares/validateSessionToken.js";
 import stripe from "../lib/stripe.js";
+import { HttpError } from "http-errors-enhanced";
+import { Transaction } from "sequelize";
 
 const router = express.Router();
 
@@ -18,7 +20,6 @@ const router = express.Router();
  * @typedef {import('../types/models').ApiKey} ApiKey
  * @typedef {import('../types/models').DedicatedServerPlan} DedicatedServerPlan
  * @typedef {import('../types/models').User} User
- * @typedef {import('../types/http').ErrorResBody} ErrorResBody
  */
 
 /**
@@ -42,11 +43,12 @@ router.post(
   validateSessionToken,
   /**
    * POST /
-   * @param {express.Request<{}, CreateAppResponse | ErrorResBody, CreateAppBody> & { user: User }} req
-   * @param {express.Response<CreateAppResponse | ErrorResBody>} res
+   * @param {express.Request<{}, CreateAppResponse, CreateAppBody> & { user: User }} req
+   * @param {express.Response<CreateAppResponse>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const {
       name,
       description,
@@ -72,9 +74,9 @@ router.post(
 
       if (!user) {
         await transaction.rollback();
-        return res
-          .status(404)
-          .json({ errors: { user: { message: "User not found" } } });
+        throw new HttpError(404, "User not found", {
+          errors: { user: { message: "User not found" } },
+        });
       }
 
       /**
@@ -85,7 +87,7 @@ router.post(
 
       if (!activePlan) {
         await transaction.rollback();
-        return res.status(400).json({
+        throw new HttpError(400, "User does not have an active plan", {
           errors: { plan: { message: "User does not have an active plan" } },
         });
       }
@@ -95,13 +97,18 @@ router.post(
         const appCount = await App.count({ where: { userId } });
         if (appCount >= activePlan.getDataValue("maxApps")) {
           await transaction.rollback();
-          return res.status(400).json({
-            errors: {
-              app: {
-                message: "Maximum number of apps reached for the current plan",
+          throw new HttpError(
+            400,
+            "Maximum number of apps reached for the current plan",
+            {
+              errors: {
+                app: {
+                  message:
+                    "Maximum number of apps reached for the current plan",
+                },
               },
-            },
-          });
+            }
+          );
         }
       }
 
@@ -118,7 +125,7 @@ router.post(
         );
         if (!dedicatedServerPlan) {
           await transaction.rollback();
-          return res.status(404).json({
+          throw new HttpError(404, "Dedicated server plan not found", {
             errors: {
               dedicatedServerPlan: {
                 message: "Dedicated server plan not found",
@@ -146,11 +153,15 @@ router.post(
           // @ts-ignore
           user.stripeCustomerId
         );
-        await stripe.subscriptions.create({
-          customer: stripeCustomer.id,
-          // @ts-ignore
-          items: [{ price: dedicatedServerPlan.stripePriceId }],
-        });
+        await stripe.subscriptions
+          .create({
+            customer: stripeCustomer.id,
+            // @ts-ignore
+            items: [{ price: dedicatedServerPlan.stripePriceId }],
+          })
+          .catch((error) => {
+            throw new HttpError(400, "Error creating subscription", error);
+          });
       }
 
       await transaction.commit();
@@ -162,8 +173,7 @@ router.post(
       });
     } catch (error) {
       await transaction.rollback();
-      console.error("Error creating app:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -188,11 +198,12 @@ router.put(
   validateSessionToken,
   /**
    * PUT /:id
-   * @param {express.Request<{ id: string }, UpdateAppResponse | ErrorResBody, UpdateAppBody> & { user: User }} req
-   * @param {express.Response<UpdateAppResponse | ErrorResBody>} res
+   * @param {express.Request<{ id: string }, UpdateAppResponse, UpdateAppBody> & { user: User }} req
+   * @param {express.Response<UpdateAppResponse>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const { id } = req.params;
     const {
       name,
@@ -203,9 +214,11 @@ router.put(
     } = req.body;
     const userId = req.user.id;
 
-    const transaction = await sequelize.transaction();
+    /** @type {Transaction | null} */
+    let transaction = null;
 
     try {
+      transaction = await sequelize.transaction();
       const app = await App.findOne({
         where: { id, userId },
         include: [{ model: DedicatedServerPlan, as: "dedicatedServerPlan" }],
@@ -213,9 +226,9 @@ router.put(
 
       if (!app) {
         await transaction.rollback();
-        return res
-          .status(404)
-          .json({ errors: { app: { message: "App not found" } } });
+        throw new HttpError(404, "App not found", {
+          errors: { app: { message: "App not found" } },
+        });
       }
 
       await app.update(
@@ -237,9 +250,8 @@ router.put(
         app,
       });
     } catch (error) {
-      await transaction.rollback();
-      console.error("Error updating app:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      if (transaction) await transaction.rollback();
+      next(error);
     }
   }
 );
@@ -254,58 +266,80 @@ router.delete(
   validateSessionToken,
   /**
    * DELETE /:id
-   * @param {express.Request<{ id: string }, DeleteAppResponse | ErrorResBody> & { user: User }} req
-   * @param {express.Response<DeleteAppResponse | ErrorResBody>} res
+   * @param {express.Request<{ id: string }, DeleteAppResponse> & { user: User }} req
+   * @param {express.Response<DeleteAppResponse>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const transaction = await sequelize.transaction();
+    /** @type {Transaction | null} */
+    let transaction = null;
 
     try {
+      transaction = await sequelize.transaction();
+
       const app = await App.findOne({
         where: { id, userId },
         include: [{ model: DedicatedServerPlan, as: "dedicatedServerPlan" }],
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving app");
       });
 
       if (!app) {
         await transaction.rollback();
-        return res
-          .status(404)
-          .json({ errors: { app: { message: "App not found" } } });
+        throw new HttpError(404, "App not found", {
+          errors: { app: { message: "App not found" } },
+        });
       }
 
       // @ts-ignore
       if (app.dedicatedServerPlan) {
-        const user = await User.findByPk(userId);
-        const stripeCustomer = await stripe.customers.retrieve(
-          // @ts-ignore
-          user.stripeCustomerId
-        );
-        const subscriptions = await stripe.subscriptions.list({
-          customer: stripeCustomer.id,
-          // @ts-ignore
-          price: app.dedicatedServerPlan.stripePriceId,
+        const user = await User.findByPk(userId).catch(() => {
+          throw new HttpError(500, "Error retrieving user");
         });
+        const stripeCustomer = await stripe.customers
+          // @ts-ignore
+          .retrieve(user.stripeCustomerId)
+          .catch(() => {
+            throw new HttpError(500, "Error retrieving Stripe customer");
+          });
+        const subscriptions = await stripe.subscriptions
+          .list({
+            customer: stripeCustomer.id,
+            // @ts-ignore
+            price: app.dedicatedServerPlan.stripePriceId,
+          })
+          .catch(() => {
+            throw new HttpError(500, "Error retrieving subscriptions");
+          });
 
         if (subscriptions.data.length > 0) {
-          // @ts-ignore
-          await stripe.subscriptions.del(subscriptions.data[0].id);
+          await stripe.subscriptions
+            .cancel(subscriptions.data[0].id)
+            .catch(() => {
+              throw new HttpError(500, "Error cancelling subscription");
+            });
         }
       }
 
-      await ApiKey.destroy({ where: { appId: id }, transaction });
-      await app.destroy({ transaction });
+      await ApiKey.destroy({ where: { appId: id }, transaction }).catch(() => {
+        throw new HttpError(500, "Error deleting API keys");
+      });
+      await app.destroy({ transaction }).catch(() => {
+        throw new HttpError(500, "Error deleting app");
+      });
 
-      await transaction.commit();
+      await transaction.commit().catch(() => {
+        throw new HttpError(500, "Error committing transaction");
+      });
 
       res.json({ message: "App and associated API keys deleted successfully" });
     } catch (error) {
-      await transaction.rollback();
-      console.error("Error deleting app:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      if (transaction) await transaction.rollback();
+      next(error);
     }
   }
 );
@@ -322,10 +356,11 @@ router.get(
   /**
    * GET /
    * @param {express.Request & { user: User }} req
-   * @param {express.Response<GetAppsResponse | ErrorResBody>} res
+   * @param {express.Response<GetAppsResponse>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const userId = req.user.id;
 
     try {
@@ -335,6 +370,8 @@ router.get(
           { model: ApiKey, as: "apiKeys" },
           { model: DedicatedServerPlan, as: "dedicatedServerPlan" },
         ],
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving apps");
       });
 
       res.json({
@@ -343,8 +380,7 @@ router.get(
         apps,
       });
     } catch (error) {
-      console.error("Error retrieving apps:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -360,27 +396,32 @@ router.post(
   validateSessionToken,
   /**
    * POST /:id/api-keys
-   * @param {express.Request<{ id: string }, CreateApiKeyResponse | ErrorResBody> & { user: User }} req
-   * @param {express.Response<CreateApiKeyResponse | ErrorResBody>} res
+   * @param {express.Request<{ id: string }, CreateApiKeyResponse> & { user: User }} req
+   * @param {express.Response<CreateApiKeyResponse>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const { id } = req.params;
     const userId = req.user.id;
 
     try {
-      const app = await App.findOne({ where: { id, userId } });
+      const app = await App.findOne({ where: { id, userId } }).catch(() => {
+        throw new HttpError(500, "Error retrieving app");
+      });
 
       if (!app) {
-        return res
-          .status(404)
-          .json({ errors: { app: { message: "App not found" } } });
+        throw new HttpError(404, "App not found", {
+          errors: { app: { message: "App not found" } },
+        });
       }
 
       const apiKey = await ApiKey.create({
         key: `api-${Math.random().toString(36).substr(2, 9)}`,
         // @ts-ignore
         appId: id,
+      }).catch(() => {
+        throw new HttpError(500, "Error creating API key");
       });
 
       res.status(201).json({
@@ -389,8 +430,7 @@ router.post(
         apiKey,
       });
     } catch (error) {
-      console.error("Error creating API key:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -405,37 +445,47 @@ router.delete(
   validateSessionToken,
   /**
    * DELETE /:appId/api-keys/:keyId
-   * @param {express.Request<{ appId: string, keyId: string }, DeleteApiKeyResponse | ErrorResBody> & { user: User }} req
-   * @param {express.Response<DeleteApiKeyResponse | ErrorResBody>} res
+   * @param {express.Request<{ appId: string, keyId: string }, DeleteApiKeyResponse> & { user: User }} req
+   * @param {express.Response<DeleteApiKeyResponse>} res
+   * @param {express.NextFunction} next
    */
   // @ts-ignore
-  async (req, res) => {
+  async (req, res, next) => {
     const { appId, keyId } = req.params;
     const userId = req.user.id;
 
     try {
-      const app = await App.findOne({ where: { id: appId, userId } });
+      const app = await App.findOne({
+        where: { id: appId, userId: userId },
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving app");
+      });
 
       if (!app) {
-        return res
-          .status(404)
-          .json({ errors: { app: { message: "App not found" } } });
+        throw new HttpError(404, "App not found", {
+          errors: { app: { message: "App not found" } },
+        });
       }
 
-      const apiKey = await ApiKey.findOne({ where: { id: keyId, appId } });
+      const apiKey = await ApiKey.findOne({
+        where: { id: keyId, appId },
+      }).catch(() => {
+        throw new HttpError(500, "Error retrieving API key");
+      });
 
       if (!apiKey) {
-        return res
-          .status(404)
-          .json({ errors: { apiKey: { message: "API key not found" } } });
+        throw new HttpError(404, "API key not found", {
+          errors: { apiKey: { message: "API key not found" } },
+        });
       }
 
-      await apiKey.destroy();
+      await apiKey.destroy().catch(() => {
+        throw new HttpError(500, "Error deleting API key");
+      });
 
       res.json({ message: "API key deleted successfully" });
     } catch (error) {
-      console.error("Error deleting API key:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );

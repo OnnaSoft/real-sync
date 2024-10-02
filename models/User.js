@@ -11,11 +11,15 @@ import { Model, Sequelize } from "sequelize";
  * @property {string} password
  * @property {string | null} [resetToken]
  * @property {Date | null} [resetTokenExpiry]
- * @property {string | null} [stripeCustomerId]
+ * @property {string} [stripeCustomerId]
  */
 
 /**
- * @typedef {import("sequelize").ModelStatic<Model<UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry'>>>} UserModel
+ * @typedef {import("sequelize").ModelStatic<Model<
+ *  UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry'> & {
+ *   stripeCustomerId: string | null;
+ * }
+ * >>} UserModel
  */
 
 /**

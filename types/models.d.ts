@@ -3,7 +3,7 @@ export interface User {
   username: string;
   email: string;
   fullname: string;
-  stripeCustomerId: string;
+  stripeCustomerId?: string;
   userPlans: UserPlan[];
 }
 

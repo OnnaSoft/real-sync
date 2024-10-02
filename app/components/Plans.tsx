@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { PricingCard } from "./PricingCard";
+import store from "../store";
+import { logout } from "../store/slices/authSlice";
 
 interface Plan {
   id: number;
@@ -25,6 +27,10 @@ interface PlansResponse {
 
 const fetchPlans = async (): Promise<PlansResponse> => {
   const response = await fetch("/plans");
+  if (response.status === 401) {
+    store.dispatch(logout());
+    return { total: 0, message: "Unauthorized", data: [] };
+  }
   if (!response.ok) {
     throw new Error("Failed to fetch plans");
   }
@@ -55,12 +61,16 @@ const getFeatures = (plan: Plan): string[] => {
 };
 
 export default function Plans() {
-  const { data, isLoading, error } = useQuery<PlansResponse, Error>({
+  const {
+    data = { message: "", total: 0, data: [] },
+    isLoading,
+    error,
+  } = useQuery<PlansResponse, Error>({
     queryKey: ["plans"],
     queryFn: fetchPlans,
   });
 
-  if (isLoading) {
+  if (isLoading || data.total === 0) {
     return (
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-5xl mx-auto">
@@ -92,7 +102,7 @@ export default function Plans() {
           Plans and Pricing
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data?.data.map((plan) => (
+          {(data?.data || []).map((plan) => (
             <PricingCard
               key={plan.id}
               title={plan.name}

@@ -1,11 +1,12 @@
 import express from "express";
 import { User, Plan, UserPlan, sequelize } from "../db.js";
-import { Op } from "sequelize";
+import { Op, Transaction } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Resend } from "resend";
 import crypto from "node:crypto";
 import stripe from "../lib/stripe.js";
+import { HttpError } from "http-errors-enhanced";
 
 const router = express.Router();
 
@@ -33,7 +34,6 @@ const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * @typedef {import('../types/http.d.ts').ErrorResBody} ErrorResBody
  * @typedef {import('../types/http.d.ts').ErrorsMap} ErrorsMap
  */
 
@@ -67,14 +67,15 @@ router.post(
   "/login",
   /**
    * POST /login
-   * @param {express.Request<{}, LoginSuccessResBody | ErrorResBody, LoginBody, LoginQuery>} req
-   * @param {express.Response<LoginSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<{}, LoginSuccessResBody, LoginBody, LoginQuery>} req
+   * @param {express.Response<LoginSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
-  async (req, res) => {
+  async (req, res, next) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({
+      throw new HttpError(400, "Username and password are required", {
         errors: {
           credentials: { message: "Username and password are required" },
         },
@@ -86,19 +87,25 @@ router.post(
         where: {
           [Op.or]: [{ username }, { email: username }],
         },
+      }).catch(() => {
+        throw new HttpError(500, "Error finding user");
       });
 
       if (!user) {
-        return res.status(400).json({
+        throw new HttpError(400, "Invalid username or password", {
           errors: { credentials: { message: "Invalid username or password" } },
         });
       }
 
       const hashedPassword = user.getDataValue("password");
-      const isPasswordValid = await bcrypt.compare(password, hashedPassword);
+      const isPasswordValid = await bcrypt
+        .compare(password, hashedPassword)
+        .catch(() => {
+          throw new HttpError(500, "Error comparing passwords");
+        });
 
       if (!isPasswordValid) {
-        return res.status(400).json({
+        throw new HttpError(400, "Invalid username or password", {
           errors: { credentials: { message: "Invalid username or password" } },
         });
       }
@@ -124,8 +131,7 @@ router.post(
         token: token,
       });
     } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -167,24 +173,31 @@ router.post(
   "/register",
   /**
    * POST /register
-   * @param {express.Request<{}, RegisterSuccessResBody | ErrorResBody, RegisterBody>} req
-   * @param {express.Response<RegisterSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<{}, RegisterSuccessResBody, RegisterBody>} req
+   * @param {express.Response<RegisterSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
-  async (req, res) => {
+  async (req, res, next) => {
     const { fullname, username, email, password } = req.body;
 
-    const transaction = await sequelize.transaction();
+    /** @type {Transaction | null} */
+    let transaction = null;
 
     try {
+      transaction = await sequelize.transaction();
       // Check if user already exists
       const existingUser = await User.findOne({
         where: {
           [Op.or]: [{ username }, { email }],
         },
+      }).catch(() => {
+        throw new HttpError(500, "Error finding user");
       });
 
       if (existingUser) {
-        await transaction.rollback();
+        await transaction.rollback().catch(() => {
+          throw new HttpError(500, "Error rolling back transaction");
+        });
         /** @type {ErrorsMap} */
         const errors = {};
         if (existingUser.getDataValue("username") === username) {
@@ -193,14 +206,15 @@ router.post(
         if (existingUser.getDataValue("email") === email) {
           errors.email = { message: "Email already exists" };
         }
-        return res.status(400).json({ errors });
+        throw new HttpError(400, "User already exists", { errors });
       }
 
       // Create Stripe customer
-      const stripeCustomer = await stripe.customers.create({
-        email: email,
-        name: fullname,
-      });
+      const stripeCustomer = await stripe.customers
+        .create({ email, name: fullname })
+        .catch(() => {
+          throw new HttpError(500, "Error creating Stripe customer");
+        });
 
       // Create new user
       const newUser = await User.create(
@@ -212,25 +226,46 @@ router.post(
           stripeCustomerId: stripeCustomer.id,
         },
         { transaction }
-      );
+      ).catch((error) => {
+        /**
+         * @type {import("sequelize").ValidationError}
+         */
+        // @ts-ignore
+        const err = error;
+
+        if (err.name === "SequelizeValidationError") {
+          /** @type {ErrorsMap} */
+          const errors = {};
+          err.errors.forEach((validationError, index) => {
+            const errorKey = validationError.path || `error_${index}`;
+            errors[errorKey] = { message: validationError.message };
+          });
+          throw new HttpError(400, "Validation error", { errors });
+        }
+        throw new HttpError(500, "Error creating user");
+      });
 
       // Find the free plan
       const freePlan = await Plan.findOne({
         where: { code: "FREE" },
+      }).catch(() => {
+        throw new HttpError(500, "Error finding free plan");
       });
 
       if (!freePlan) {
         await transaction.rollback();
-        return res.status(500).json({
-          errors: { server: { message: "Free plan not found" } },
-        });
+        throw new HttpError(500, "Free plan not found");
       }
 
       // Create Stripe subscription for the free plan
-      const subscription = await stripe.subscriptions.create({
-        customer: stripeCustomer.id,
-        items: [{ price: freePlan.getDataValue("stripePriceId") }],
-      });
+      const subscription = await stripe.subscriptions
+        .create({
+          customer: stripeCustomer.id,
+          items: [{ price: freePlan.getDataValue("stripePriceId") }],
+        })
+        .catch(() => {
+          throw new HttpError(500, "Error creating Stripe subscription");
+        });
 
       // Assign the free plan to the user
       await UserPlan.create(
@@ -243,33 +278,21 @@ router.post(
           stripeSubscriptionItemId: subscription.items.data[0].id,
         },
         { transaction }
-      );
+      ).catch(() => {
+        throw new HttpError(500, "Error creating user plan");
+      });
 
-      await transaction.commit();
+      await transaction.commit().catch((err) => {
+        throw new HttpError(500, "Error committing transaction");
+      });
 
       res.status(201).json({
         message: "User registered successfully and assigned free plan",
         userId: newUser.getDataValue("id"),
       });
     } catch (error) {
-      await transaction.rollback();
-      /**
-       * @type {import("sequelize").ValidationError}
-       */
-      // @ts-ignore
-      const err = error;
-
-      if (err.name === "SequelizeValidationError") {
-        /** @type {ErrorsMap} */
-        const errors = {};
-        err.errors.forEach((validationError, index) => {
-          const errorKey = validationError.path || `error_${index}`;
-          errors[errorKey] = { message: validationError.message };
-        });
-        return res.status(400).json({ errors });
-      }
-      console.error(error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      if (transaction) await transaction.rollback();
+      next(error);
     }
   }
 );
@@ -287,17 +310,20 @@ router.post(
   "/forgot-password",
   /**
    * POST /forgot-password
-   * @param {express.Request<{}, ForgotPasswordSuccessResBody | ErrorResBody, ForgotPasswordBody>} req
-   * @param {express.Response<ForgotPasswordSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<{}, ForgotPasswordSuccessResBody, ForgotPasswordBody>} req
+   * @param {express.Response<ForgotPasswordSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
-  async (req, res) => {
+  async (req, res, next) => {
     const { email } = req.body;
 
     try {
-      const user = await User.findOne({ where: { email } });
+      const user = await User.findOne({ where: { email } }).catch(() => {
+        throw new HttpError(500, "Error finding user");
+      });
 
       if (!user) {
-        return res.status(404).json({
+        throw new HttpError(404, "No user found with this email address", {
           errors: {
             email: { message: "No user found with this email address" },
           },
@@ -309,17 +335,22 @@ router.post(
       const resetTokenExpiry = new Date(Date.now() + 3600000); // Token expires in 1 hour
 
       // Update user with reset token and expiry
-      await user.update({
-        resetToken,
-        resetTokenExpiry,
-      });
+      await user
+        .update({
+          resetToken,
+          resetTokenExpiry,
+        })
+        .catch(() => {
+          throw new HttpError(500, "Error updating user");
+        });
 
       // Send password reset email using Resend
-      const { data, error } = await resend.emails.send({
-        from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
-        to: user.getDataValue("email"),
-        subject: "Password Reset Request",
-        html: `
+      const { error } = await resend.emails
+        .send({
+          from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
+          to: user.getDataValue("email"),
+          subject: "Password Reset Request",
+          html: `
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -354,21 +385,20 @@ router.post(
           </body>
           </html>
         `,
-      });
+        })
+        .catch(() => {
+          throw new HttpError(500, "Failed to send reset email");
+        });
 
       if (error) {
-        console.error("Email sending error:", error);
-        return res.status(500).json({
-          errors: { server: { message: "Failed to send reset email" } },
-        });
+        throw new HttpError(500, "Failed to send reset email");
       }
 
       res.status(200).json({
         message: "Password reset email sent",
       });
     } catch (error) {
-      console.error("Forgot password error:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );
@@ -388,10 +418,11 @@ router.post(
   "/reset-password",
   /**
    * POST /reset-password
-   * @param {express.Request<{}, ResetPasswordSuccessResBody | ErrorResBody, ResetPasswordBody>} req
-   * @param {express.Response<ResetPasswordSuccessResBody | ErrorResBody>} res
+   * @param {express.Request<{}, ResetPasswordSuccessResBody, ResetPasswordBody>} req
+   * @param {express.Response<ResetPasswordSuccessResBody>} res
+   * @param {express.NextFunction} next
    */
-  async (req, res) => {
+  async (req, res, next) => {
     const { token, newPassword } = req.body;
     try {
       const user = await User.findOne({
@@ -399,27 +430,32 @@ router.post(
           resetToken: token,
           resetTokenExpiry: { [Op.gt]: new Date() },
         },
+      }).catch(() => {
+        throw new HttpError(500, "Error finding user");
       });
 
       if (!user) {
-        return res.status(400).json({
+        throw new HttpError(400, "Invalid or expired reset token", {
           errors: { token: { message: "Invalid or expired reset token" } },
         });
       }
 
       // Update user's password and clear reset token fields
-      await user.update({
-        password: newPassword,
-        resetToken: null,
-        resetTokenExpiry: null,
-      });
+      await user
+        .update({
+          password: newPassword,
+          resetToken: null,
+          resetTokenExpiry: null,
+        })
+        .catch(() => {
+          throw new HttpError(500, "Error resetting password");
+        });
 
       res.status(200).json({
         message: "Password has been reset successfully",
       });
     } catch (error) {
-      console.error("Reset password error:", error);
-      res.status(500).json({ errors: { server: { message: "Server error" } } });
+      next(error);
     }
   }
 );

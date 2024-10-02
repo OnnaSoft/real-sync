@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../components/ui/alert-dialog";
+import useFetch from "../hooks/useFetch";
 
 interface PaymentMethod {
   id: string;
@@ -147,6 +148,7 @@ export default function PaymentMethods() {
   const [showAddForm, setShowAddForm] = useState(false);
   const queryClient = useQueryClient();
   const token = useAppSelector((state) => state.auth.token);
+  const fetch = useFetch();
 
   const {
     data: paymentMethods = [],
