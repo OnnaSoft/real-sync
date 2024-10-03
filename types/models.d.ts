@@ -4,7 +4,7 @@ export interface User {
   email: string;
   fullname: string;
   stripeCustomerId?: string;
-  userPlans: UserPlan[];
+  userSubscriptions: UserSubscription[];
 }
 
 export interface Plan {
@@ -24,10 +24,9 @@ export interface Plan {
   stripePriceId: string | null;
 }
 
-export interface UserPlan {
+export interface UserSubscription {
   id: number;
   userId: number;
-  planId: number;
   activatedAt: Date;
   cancelRequestedAt: Date | null;
   effectiveCancelDate: Date | null;
@@ -37,7 +36,7 @@ export interface UserPlan {
   plan: Plan;
 }
 
-export interface UserPlanWithPlan extends UserPlan {
+export interface UserSubscriptionWithPlan extends UserSubscription {
   plan: Plan;
 }
 

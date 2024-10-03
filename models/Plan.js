@@ -150,7 +150,7 @@ const PlanModel = (sequelize) => {
      * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
      */
     (models) => {
-      Plan.hasMany(models.UserPlan, { foreignKey: "planId" });
+      Plan.hasMany(models.UserSubscription, { foreignKey: "planId" });
     };
 
   return Plan;

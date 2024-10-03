@@ -1,8 +1,9 @@
 import express from "express";
 import Stripe from "stripe";
-import { User, Plan, sequelize, StripeEvent } from "../db.js";
+import { User, Plan, sequelize, StripeEvent, UserSubscription } from "../db.js";
 import stripe from "../lib/stripe.js";
 import { HttpError } from "http-errors-enhanced";
+import { Transaction } from "sequelize";
 
 const router = express.Router();
 
@@ -53,14 +54,16 @@ router.post(
     try {
       switch (event.type) {
         case "customer.subscription.created":
+          await handleSubscriptionCreated(event);
+          break;
         case "customer.subscription.updated":
+          await handleSubscriptionUpdated(event);
+          break;
         case "customer.subscription.deleted":
-          const subscription = event.data.object;
-          await handleSubscriptionChange(subscription);
+          await handleSubscriptionDeleted(event);
           break;
         case "invoice.payment_succeeded":
-          const invoice = event.data.object;
-          await handleInvoicePaymentSucceeded(invoice);
+          await handleInvoicePaymentSucceeded(event);
           break;
         // ... handle other event types
         default:
@@ -77,132 +80,317 @@ router.post(
 );
 
 /**
- * Handle subscription changes
- * @param {Stripe.Subscription} subscription
+ *
+ * @param {import('stripe').Stripe.CustomerSubscriptionCreatedEvent} event
  */
-async function handleSubscriptionChange(subscription) {
-  const transaction = await sequelize.transaction();
-
+async function handleSubscriptionCreated(event) {
+  /** @type {Transaction|null} */
+  let transaction = null;
   try {
-    const user = await User.findOne({
-      where: { stripeCustomerId: subscription.customer.toString() },
-      transaction,
+    transaction = await sequelize.transaction().catch(() => {
+      throw new HttpError(500, "Error starting database transaction");
     });
 
-    if (!user) {
-      throw new Error(
-        `No user found for Stripe customer ID: ${subscription.customer}`
-      );
-    }
+    await registerEvent(transaction, event);
 
-    const plan = await Plan.findOne({
-      where: { stripePriceId: subscription.items.data[0].price.id },
+    const userSubscription = await UserSubscription.findOne({
+      where: { stripeSubscriptionId: event.data.object.id },
       transaction,
+    }).catch(() => {
+      throw new HttpError(500, "Error finding user subscription");
     });
 
-    if (!plan) {
-      throw new Error(
-        `No plan found for Stripe price ID: ${subscription.items.data[0].price.id}`
-      );
+    if (!userSubscription) {
+      throw new HttpError(404, "User subscription not found");
     }
 
-    const isActive = subscription.status === "active";
-    const isPendingCancel =
-      subscription.status === "canceled" && subscription.cancel_at_period_end;
-    const isCanceled = subscription.status === "canceled";
-    /**
-     * @type {"active" | "inactive" | "pending_cancellation" | "cancelled"}
-     */
-    let status = "inactive";
-    if (isActive) status = "active";
-    if (isPendingCancel) status = "pending_cancellation";
-    if (isCanceled) status = "cancelled";
+    userSubscription
+      .update(
+        {
+          status: "active",
+          activatedAt: new Date(),
+        },
+        { transaction }
+      )
+      .catch((error) => {
+        throw new HttpError(500, "Error updating user subscription", {
+          errors: {
+            server: { message: error.message },
+          },
+        });
+      });
 
-    const effectiveCancelDate = isPendingCancel
-      ? new Date(subscription.current_period_end * 1000)
-      : null;
-
-    /*
-    await UserPlan.create(
-      {
-        userId: user.getDataValue("id"),
-        planId: plan.getDataValue("id"),
-        status,
-        stripeSubscriptionId: subscription.id,
-        stripeSubscriptionItemId: subscription.items.data[0].id,
-        effectiveCancelDate,
-        activatedAt: new Date(),
-      },
-      { transaction }
-    );*/
-
-    await transaction.commit();
+    await transaction.commit().catch((error) => {
+      if (error.name === "SequelizeUniqueConstraintError") {
+        return;
+      }
+    });
   } catch (error) {
-    await transaction.rollback();
+    if (transaction) {
+      transaction.rollback().catch(() => {
+        throw new HttpError(500, "Error rolling back database transaction");
+      });
+    }
+    throw error;
+  }
+}
+
+/**
+ *
+ * @param {import('stripe').Stripe.CustomerSubscriptionUpdatedEvent} event
+ */
+async function handleSubscriptionUpdated(event) {
+  /** @type {Transaction|null} */
+  let transaction = null;
+  try {
+    transaction = await sequelize.transaction().catch(() => {
+      throw new HttpError(500, "Error starting database transaction");
+    });
+
+    await registerEvent(transaction, event);
+
+    const userSubscription = await UserSubscription.findOne({
+      where: { stripeSubscriptionId: event.data.object.id },
+      transaction,
+    }).catch(() => {
+      throw new HttpError(500, "Error finding user subscription");
+    });
+
+    if (!userSubscription) {
+      throw new HttpError(404, "User subscription not found");
+    }
+
+    const subscriptionStatus = event.data.object.status;
+
+    /** @type { "active" | "pending_cancellation" | "inactive" | "cancelled" } */
+    let status = "active";
+    if (subscriptionStatus === "active") status = "active";
+    else if (subscriptionStatus === "trialing") status = "active";
+    else if (subscriptionStatus === "canceled") status = "cancelled";
+    else if (subscriptionStatus === "incomplete_expired") status = "inactive";
+    else if (subscriptionStatus === "past_due") status = "inactive";
+    else if (subscriptionStatus === "unpaid") status = "inactive";
+    else if (subscriptionStatus === "paused") status = "inactive";
+    else if (subscriptionStatus === "incomplete")
+      status = "pending_cancellation";
+    const effectiveCancelDate =
+      status === "pending_cancellation"
+        ? event.data.object.canceled_at
+        : undefined;
+
+    userSubscription
+      .update(
+        {
+          status,
+          activatedAt: status === "active" ? new Date() : undefined,
+          effectiveCancelDate: effectiveCancelDate
+            ? new Date(effectiveCancelDate)
+            : undefined,
+        },
+        { transaction }
+      )
+      .catch((error) => {
+        throw new HttpError(500, "Error updating user subscription", {
+          errors: {
+            server: { message: error.message },
+          },
+        });
+      });
+
+    await transaction.commit().catch((error) => {
+      if (error.name === "SequelizeUniqueConstraintError") {
+        return;
+      }
+    });
+  } catch (error) {
+    if (transaction) {
+      transaction.rollback().catch(() => {
+        throw new HttpError(500, "Error rolling back database transaction");
+      });
+    }
+    throw error;
+  }
+}
+
+/**
+ *
+ * @param {import('stripe').Stripe.CustomerSubscriptionDeletedEvent} event
+ */
+async function handleSubscriptionDeleted(event) {
+  /** @type {Transaction|null} */
+  let transaction = null;
+  try {
+    transaction = await sequelize.transaction().catch(() => {
+      throw new HttpError(500, "Error starting database transaction");
+    });
+
+    await registerEvent(transaction, event);
+
+    const userSubscription = await UserSubscription.findOne({
+      where: { stripeSubscriptionId: event.data.object.id },
+      transaction,
+    }).catch(() => {
+      throw new HttpError(500, "Error finding user subscription");
+    });
+
+    if (!userSubscription) {
+      throw new HttpError(404, "User subscription not found");
+    }
+
+    userSubscription
+      .update(
+        {
+          status: "cancelled",
+          effectiveCancelDate: new Date(),
+        },
+        { transaction }
+      )
+      .catch(() => {
+        throw new HttpError(500, "Error updating user subscription");
+      });
+
+    await transaction.commit().catch((error) => {
+      if (error.name === "SequelizeUniqueConstraintError") {
+        return;
+      }
+    });
+  } catch (error) {
+    if (transaction) {
+      transaction.rollback().catch(() => {
+        throw new HttpError(500, "Error rolling back database transaction");
+      });
+    }
     throw error;
   }
 }
 
 /**
  * Handle successful invoice payment
- * @param {import('stripe').Stripe.Invoice} invoice
+ * @param {import('stripe').Stripe.InvoicePaymentSucceededEvent} event
  */
-async function handleInvoicePaymentSucceeded(invoice) {
+async function handleInvoicePaymentSucceeded(event) {
+  const invoice = event.data.object;
   console.log(`Payment succeeded for invoice: ${invoice.id}`);
-  if (
-    !invoice.customer ||
-    typeof invoice.customer === "string" ||
-    invoice.customer.deleted
-  ) {
+  console.log(`Invoice data:`, JSON.stringify(invoice));
+  const customer = invoice.customer;
+  if (!customer || (typeof customer !== "string" && customer.deleted)) {
+    console.log(
+      `Customer ${invoice.customer} is deleted. Skipping invoice processing.`
+    );
     return;
   }
+
+  const price = invoice.lines.data[0].price;
+
+  /** @type {Transaction | null} */
+  let transaction = null;
   try {
-    await StripeEvent.create({
-      id: invoice.id,
-      object: invoice.object,
-      accountCountry: invoice.account_country,
-      accountName: invoice.account_name,
-      amountDue: invoice.amount_due,
-      amountPaid: invoice.amount_paid,
-      amountRemaining: invoice.amount_remaining,
-      attemptCount: invoice.attempt_count,
-      attempted: invoice.attempted,
-      autoAdvance: invoice.auto_advance,
-      billingReason: invoice.billing_reason,
-      collectionMethod: invoice.collection_method,
-      created: invoice.created,
-      currency: invoice.currency,
-      customerId: invoice.customer.id,
-      customerEmail: invoice.customer.email,
-      customerName: invoice.customer.name,
-      description: invoice.description,
-      dueDate: invoice.due_date,
-      effectiveAt: invoice.effective_at,
-      endingBalance: invoice.ending_balance,
-      hostedInvoiceUrl: invoice.hosted_invoice_url,
-      invoicePdf: invoice.invoice_pdf,
-      number: invoice.number,
-      paid: invoice.paid,
-      periodEnd: invoice.period_end,
-      periodStart: invoice.period_start,
-      status: invoice.status,
-      subscription:
-        typeof invoice.subscription === "string"
-          ? invoice.subscription
-          : invoice.subscription?.id,
-      subtotal: invoice.subtotal,
-      tax: invoice.tax,
-      total: invoice.total,
-      webhooksDeliveredAt: invoice.webhooks_delivered_at,
+    transaction = await sequelize.transaction().catch(() => {
+      throw new HttpError("Error starting database transaction");
+    });
+
+    const subscription =
+      typeof invoice.subscription === "string"
+        ? invoice.subscription
+        : invoice.subscription?.id;
+    if (!subscription) {
+      throw new HttpError(400, "Subscription ID not found in invoice");
+    }
+
+    if (!(await registerEvent(transaction, event))) {
+      return;
+    }
+
+    const userSubscription = await UserSubscription.findOne({
+      where: { stripeSubscriptionId: subscription },
+      transaction,
+    }).catch((error) => {
+      throw new HttpError(500, "Error finding user plan", {
+        errors: {
+          server: { message: error.message },
+        },
+      });
+    });
+
+    if (!userSubscription) {
+      throw new HttpError(404, "User plan not found");
+    }
+    const plan = await Plan.findOne({
+      where: { stripePriceId: price?.id },
+      attributes: ["id"],
+      transaction,
+    }).catch(() => {
+      throw new HttpError(500, "Error retrieving plan");
+    });
+
+    if (plan) {
+      await userSubscription
+        .update(
+          {
+            status: "active",
+            stripePriceId: price?.id,
+            activatedAt: new Date(),
+          },
+          { transaction }
+        )
+        .catch((error) => {
+          throw new HttpError(500, "Error updating user plan", {
+            errors: {
+              server: { message: error.message },
+            },
+          });
+        });
+    }
+
+    await transaction.commit().catch((error) => {
+      if (error.name === "SequelizeUniqueConstraintError") {
+        return;
+      }
     });
 
     console.log(`Payment succeeded for invoice: ${invoice.id}`);
     console.log(`Invoice data saved to database`);
   } catch (error) {
-    console.error(`Error saving invoice ${invoice.id} to database:`, error);
-    // Depending on your error handling strategy, you might want to throw the error here
-    // throw error;
+    if (transaction) {
+      transaction.rollback().catch(() => {
+        throw new HttpError(500, "Error rolling back database transaction");
+      });
+    }
+    throw error;
   }
+}
+
+/**
+ * @param {Transaction} transaction
+ * @param {import('stripe').Stripe.Event} event
+ */
+async function registerEvent(transaction, event) {
+  const stripeEvent = await StripeEvent.findOne({
+    where: { eventId: event.id },
+    transaction,
+  }).catch(() => {
+    throw new HttpError(500, "Error finding Stripe event");
+  });
+
+  if (stripeEvent) {
+    console.log(`Event already processed: ${event.id}`);
+    return;
+  }
+
+  return StripeEvent.create(
+    {
+      eventId: event.id,
+      type: event.type,
+      data: event.data,
+    },
+    { transaction }
+  ).catch((error) => {
+    throw new HttpError("Error saving invoice to database", {
+      errors: {
+        server: { message: error.message },
+      },
+    });
+  });
 }
 
 export default router;

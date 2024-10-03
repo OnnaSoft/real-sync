@@ -43,6 +43,20 @@ app.use("/", api);
 // @ts-ignore
 app.all("*", createRequestHandler({ build }));
 
+app.use(
+  /**
+   *
+   * @param {Error} err
+   * @param {express.Request} req
+   * @param {express.Response} res
+   * @param {express.NextFunction} next
+   */
+  (err, req, res, next) => {
+    console.error(err);
+    res.status(500).send("An error occurred");
+  }
+);
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

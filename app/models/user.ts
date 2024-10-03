@@ -6,7 +6,7 @@ export interface User {
   email: string;
   fullname: string;
   stripeCustomerId: string;
-  userPlans: any[]; // This is an empty array in the example, so we'll use 'any[]' for now
+  userSubscription: any[]; // This is an empty array in the example, so we'll use 'any[]' for now
 }
 
 export interface CurrentPlan {

@@ -1,5 +1,5 @@
 import express from "express";
-import { User, Plan, UserPlan, sequelize } from "../db.js";
+import { User, Plan, UserSubscription, sequelize } from "../db.js";
 import { Op, Transaction } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -268,10 +268,10 @@ router.post(
         });
 
       // Assign the free plan to the user
-      await UserPlan.create(
+      await UserSubscription.create(
         {
           userId: newUser.getDataValue("id"),
-          planId: freePlan.getDataValue("id"),
+          stripePriceId: freePlan.getDataValue("stripePriceId"),
           status: "active",
           activatedAt: new Date(),
           stripeSubscriptionId: subscription.id,

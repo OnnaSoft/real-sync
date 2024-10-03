@@ -74,7 +74,7 @@ const AppModel = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "dedicated-server-plans",
+          model: "dedicatedServerPlans",
           key: "id",
         },
       },
@@ -83,11 +83,11 @@ const AppModel = (sequelize) => {
       timestamps: true,
       hooks: {
         beforeCreate: async (app) => {
-          const { User, Plan, UserPlan } = sequelize.models;
+          const { User, Plan, UserSubscription } = sequelize.models;
           const user = await User.findByPk(app.getDataValue("userId"), {
             include: [
               {
-                model: UserPlan,
+                model: UserSubscription,
                 where: { status: "active" },
                 include: [Plan],
               },

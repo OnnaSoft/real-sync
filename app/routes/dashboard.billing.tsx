@@ -38,7 +38,7 @@ interface Plan {
   billingPeriod: string;
 }
 
-interface UserPlan {
+interface UserSubscription {
   id: number;
   userId: number;
   planId: number;
@@ -56,7 +56,7 @@ interface UserProfile {
     email: string;
     fullname: string;
   };
-  currentPlan: UserPlan;
+  currentPlan: UserSubscription;
 }
 
 const fakeBillingHistory: BillingHistory[] = [

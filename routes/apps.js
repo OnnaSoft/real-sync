@@ -5,7 +5,7 @@ import {
   DedicatedServerPlan,
   User,
   Plan,
-  UserPlan,
+  UserSubscription,
   sequelize,
 } from "../db.js";
 import validateSessionToken from "../middlewares/validateSessionToken.js";
@@ -65,7 +65,7 @@ router.post(
       const user = await User.findByPk(userId, {
         include: [
           {
-            model: UserPlan,
+            model: UserSubscription,
             where: { status: "active" },
             include: [Plan],
           },

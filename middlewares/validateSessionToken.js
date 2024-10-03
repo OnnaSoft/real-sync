@@ -40,7 +40,7 @@ const validateSessionToken = (req, res, next) => {
           email: user.getDataValue("email"),
           fullname: user.getDataValue("fullname"),
           stripeCustomerId: user.getDataValue("stripeCustomerId"),
-          userPlans: [],
+          userSubscriptions: [],
         };
         next();
       } catch (error) {

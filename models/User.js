@@ -134,7 +134,7 @@ const UserModel = (sequelize) => {
      * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
      */
     (models) => {
-      User.hasMany(models.UserPlan, { foreignKey: "userId" });
+      User.hasMany(models.UserSubscription, { foreignKey: "userId" });
       User.hasMany(models.PaymentMethod, { foreignKey: "userId" });
       User.hasMany(models.App, { foreignKey: "userId" });
     };

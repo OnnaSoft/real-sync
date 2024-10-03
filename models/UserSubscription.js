@@ -1,31 +1,31 @@
 import { DataTypes, Model, Sequelize } from "sequelize";
 
 /**
- * @typedef {Object} UserPlanAttributes
+ * @typedef {Object} UserSubscriptionAttributes
  * @property {number} id
  * @property {number} userId
- * @property {number} planId
+ * @property {string} stripePriceId
+ * @property {string} stripeSubscriptionId
  * @property {Date} activatedAt
  * @property {Date|null} [cancelRequestedAt]
  * @property {Date|null} [effectiveCancelDate]
  * @property {'active' | 'pending_cancellation' | 'inactive' | 'cancelled'} status
- * @property {string} stripeSubscriptionId
  * @property {string} stripeSubscriptionItemId
  */
 
 /**
- * @typedef {import("sequelize").ModelStatic<Model<UserPlanAttributes, Omit<UserPlanAttributes, 'id'>>>} UserPlanModel
+ * @typedef {import("sequelize").ModelStatic<Model<UserSubscriptionAttributes, Omit<UserSubscriptionAttributes, 'id'>>>} UserSubscriptionModel
  */
 
 /**
  * @param {Sequelize} sequelize
- * @returns {UserPlanModel & {associate: (models: any) => void}}
+ * @returns {UserSubscriptionModel & {associate: (models: any) => void}}
  */
-const UserPlanModel = (sequelize) => {
-  /** @type {UserPlanModel & { associate: (models: any) => void }} */
+const UserSubscriptionModel = (sequelize) => {
+  /** @type {UserSubscriptionModel & { associate: (models: any) => void }} */
   // @ts-ignore
-  const UserPlan = sequelize.define(
-    "user-plan",
+  const UserSubscription = sequelize.define(
+    "userSubscription",
     {
       id: {
         type: DataTypes.INTEGER,
@@ -42,15 +42,20 @@ const UserPlanModel = (sequelize) => {
         onUpdate: "CASCADE",
         onDelete: "CASCADE",
       },
-      planId: {
-        type: DataTypes.INTEGER,
+      stripePriceId: {
+        type: DataTypes.STRING,
         allowNull: false,
         references: {
           model: "plans",
-          key: "id",
+          key: "stripePriceId",
         },
         onUpdate: "CASCADE",
         onDelete: "RESTRICT",
+      },
+      stripeSubscriptionId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: "compositeIndex",
       },
       activatedAt: {
         type: DataTypes.DATE,
@@ -78,13 +83,14 @@ const UserPlanModel = (sequelize) => {
         allowNull: true,
       },
       status: {
-        type: DataTypes.ENUM("active", "pending_cancellation", "cancelled"),
+        type: DataTypes.ENUM(
+          "active",
+          "pending_cancellation",
+          "cancelled",
+          "inactive"
+        ),
         allowNull: false,
         defaultValue: "active",
-      },
-      stripeSubscriptionId: {
-        type: DataTypes.STRING,
-        allowNull: true,
       },
       stripeSubscriptionItemId: {
         type: DataTypes.STRING,
@@ -93,19 +99,26 @@ const UserPlanModel = (sequelize) => {
     },
     {
       timestamps: true,
+      indexes: [
+        {
+          unique: true,
+          fields: ["userId", "stripeSubscriptionId"],
+          name: "compositeIndex",
+        },
+      ],
       hooks: {
-        beforeUpdate: async (userPlan) => {
+        beforeUpdate: async (userSubscription) => {
           if (
             // @ts-ignore
-            userPlan.changed("cancelRequestedAt") &&
-            userPlan.getDataValue("cancelRequestedAt")
+            userSubscription.changed("cancelRequestedAt") &&
+            userSubscription.getDataValue("cancelRequestedAt")
           ) {
             const activationDate = new Date(
-              userPlan.getDataValue("activatedAt")
+              userSubscription.getDataValue("activatedAt")
             );
             const cancelRequestDate = new Date(
               // @ts-ignore
-              userPlan.getDataValue("cancelRequestedAt")
+              userSubscription.getDataValue("cancelRequestedAt")
             );
 
             // Set the effective cancel date to the last day of the next month
@@ -126,24 +139,27 @@ const UserPlanModel = (sequelize) => {
               effectiveDate.setDate(minEffectiveDate.getDate() - 1);
             }
 
-            userPlan.setDataValue("effectiveCancelDate", effectiveDate);
-            userPlan.setDataValue("status", "pending_cancellation");
+            userSubscription.setDataValue("effectiveCancelDate", effectiveDate);
+            userSubscription.setDataValue("status", "pending_cancellation");
           }
         },
       },
     }
   );
 
-  UserPlan.associate =
+  UserSubscription.associate =
     /**
      * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
      */
     (models) => {
-      UserPlan.belongsTo(models.User, { foreignKey: "userId" });
-      UserPlan.belongsTo(models.Plan, { foreignKey: "planId" });
+      UserSubscription.belongsTo(models.User, { foreignKey: "userId" });
+      UserSubscription.belongsTo(models.Plan, {
+        foreignKey: "stripePriceId",
+        targetKey: "stripePriceId",
+      });
     };
 
-  return UserPlan;
+  return UserSubscription;
 };
 
-export default UserPlanModel;
+export default UserSubscriptionModel;

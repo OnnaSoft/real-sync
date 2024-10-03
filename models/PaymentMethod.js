@@ -26,7 +26,7 @@ const PaymentMethodModel = (sequelize) => {
   /** @type {PaymentMethodModel & { associate: (models: any) => void }} */
   // @ts-ignore
   const PaymentMethod = sequelize.define(
-    "payment-method",
+    "paymentMethod",
     {
       id: {
         type: DataTypes.INTEGER,

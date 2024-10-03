@@ -22,7 +22,7 @@ const DedicatedServerPlanModel = (sequelize) => {
   /** @type {DedicatedServerPlanModel & { associate: (models: any) => void }} */
   // @ts-ignore
   const DedicatedServerPlan = sequelize.define(
-    "dedicated-server-plan",
+    "dedicatedServerPlan",
     {
       id: {
         type: DataTypes.INTEGER,

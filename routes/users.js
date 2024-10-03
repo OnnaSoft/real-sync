@@ -1,6 +1,6 @@
 import express from "express";
 import validateSessionToken from "../middlewares/validateSessionToken.js";
-import { UserPlan, Plan, User } from "../db.js";
+import { UserSubscription, Plan, User } from "../db.js";
 import { Op } from "sequelize";
 import stripe from "../lib/stripe.js";
 import { HttpError } from "http-errors-enhanced";
@@ -10,14 +10,14 @@ const router = express.Router();
 /**
  * @typedef {import('../types/models').User} User
  * @typedef {import('../types/models').Plan} Plan
- * @typedef {import('../types/models').UserPlanWithPlan} UserPlanWithPlan
+ * @typedef {import('../types/models').UserSubscription} UserSubscription
  */
 
 /**
  * @typedef {Object} ProfileResponse
  * @property {string} message
  * @property {User} user
- * @property {UserPlanWithPlan} currentPlan
+ * @property {import("../types/models").UserSubscriptionWithPlan} currentPlan
  * @property {boolean} hasPaymentMethod
  */
 router.get(
@@ -33,7 +33,7 @@ router.get(
   async (req, res, next) => {
     const user = req.user;
     try {
-      const userPlan = await UserPlan.findOne({
+      const userSubscription = await UserSubscription.findOne({
         where: {
           userId: user.id,
           status: {
@@ -50,6 +50,12 @@ router.get(
         throw new HttpError(500, "Error retrieving user plan");
       });
 
+      if (!userSubscription) {
+        throw new HttpError(404, "User plan not found", {
+          errors: { user: { message: "User plan not found" } },
+        });
+      }
+
       // Check if the user has a payment method
       let hasPaymentMethod = false;
       if (user.stripeCustomerId) {
@@ -62,18 +68,6 @@ router.get(
         if (!customer.deleted) {
           hasPaymentMethod =
             customer.invoice_settings.default_payment_method !== null;
-        } else {
-          // If the customer was deleted, remove the Stripe customer ID from the user
-          await User.update(
-            // @ts-ignore
-            { stripeCustomerId: null },
-            { where: { id: user.id } }
-          ).catch(() => {
-            throw new HttpError(
-              500,
-              "Error removing Stripe customer ID from user"
-            );
-          });
         }
       }
 
@@ -82,7 +76,7 @@ router.get(
         message: "User profile retrieved successfully",
         user: user,
         // @ts-ignore
-        currentPlan: userPlan.toJSON(),
+        currentPlan: userSubscription.toJSON(),
         hasPaymentMethod: hasPaymentMethod,
       };
 
@@ -101,7 +95,7 @@ router.get(
 /**
  * @typedef {Object} AssignPlanResponse
  * @property {string} message
- * @property {UserPlanWithPlan} userPlan
+ * @property {import("../types/models").UserSubscriptionWithPlan} userSubscription
  */
 
 router.post(
@@ -149,7 +143,7 @@ router.post(
       }
 
       // Check if the user already has an active plan
-      const existingUserPlan = await UserPlan.findOne({
+      const existinguserSubscription = await UserSubscription.findOne({
         where: {
           userId,
           status: {
@@ -168,26 +162,31 @@ router.post(
 
       let stripeSubscription;
 
-      if (existingUserPlan) {
+      if (existinguserSubscription) {
         // Update the existing Stripe subscription
         stripeSubscription = await stripe.subscriptions
-          .update(existingUserPlan.getDataValue("stripeSubscriptionId"), {
-            items: [
-              {
-                // @ts-ignore
-                id: existingUserPlan.getDataValue("stripeSubscriptionItemId"),
-                price: plan.getDataValue("stripePriceId"),
-              },
-            ],
-          })
+          .update(
+            existinguserSubscription.getDataValue("stripeSubscriptionId"),
+            {
+              items: [
+                {
+                  // @ts-ignore
+                  id: existinguserSubscription.getDataValue(
+                    "stripeSubscriptionItemId"
+                  ),
+                  price: plan.getDataValue("stripePriceId"),
+                },
+              ],
+            }
+          )
           .catch((error) => {
             throw new HttpError(400, "Error updating subscription", error);
           });
 
         // Update the existing plan
-        await existingUserPlan
+        await existinguserSubscription
           .update({
-            planId,
+            stripePriceId: plan.getDataValue("stripePriceId"),
             status: "active",
             activatedAt: new Date(),
             cancelRequestedAt: null,
@@ -210,9 +209,9 @@ router.post(
           });
 
         // Create a new user plan
-        await UserPlan.create({
+        await UserSubscription.create({
           userId,
-          planId,
+          stripePriceId: plan.getDataValue("stripePriceId"),
           status: "active",
           activatedAt: new Date(),
           stripeSubscriptionId: stripeSubscription.id,
@@ -223,10 +222,10 @@ router.post(
       }
 
       // Fetch the updated user plan with plan details
-      const updatedUserPlan = await UserPlan.findOne({
+      const updateduserSubscription = await UserSubscription.findOne({
         where: {
           userId,
-          planId,
+          stripePriceId: plan.getDataValue("stripePriceId"),
           status: "active",
         },
         include: [
@@ -239,13 +238,14 @@ router.post(
         throw new HttpError(500, "Error retrieving updated user plan");
       });
 
-      if (!updatedUserPlan) {
+      if (!updateduserSubscription) {
         throw new Error("Failed to retrieve updated user plan");
       }
 
       res.status(200).json({
         message: "Plan assigned successfully",
-        userPlan: updatedUserPlan.toJSON(),
+        // @ts-ignore
+        userSubscription: updateduserSubscription.toJSON(),
       });
     } catch (error) {
       next(error);

@@ -1,12 +1,12 @@
 import { Sequelize } from "sequelize";
 import UserModel from "./models/User.js";
 import PlanModel from "./models/Plan.js";
-import UserPlanModel from "./models/UserPlan.js";
 import PaymentMethodModel from "./models/PaymentMethod.js";
 import AppModel from "./models/App.js";
 import ApiKeyModel from "./models/ApiKey.js";
 import DedicatedServerPlanModel from "./models/DedicatedServerPlan.js";
 import StripeEventModel from "./models/StripeEvent.js";
+import UserSubscriptionModel from "./models/UserSubscription.js";
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -51,7 +51,7 @@ export const sequelize = new Sequelize(
 
 export const User = UserModel(sequelize);
 export const Plan = PlanModel(sequelize);
-export const UserPlan = UserPlanModel(sequelize);
+export const UserSubscription = UserSubscriptionModel(sequelize);
 export const PaymentMethod = PaymentMethodModel(sequelize);
 export const DedicatedServerPlan = DedicatedServerPlanModel(sequelize);
 export const App = AppModel(sequelize);
@@ -63,7 +63,7 @@ export const StripeEvent = StripeEventModel(sequelize);
 const models = {
   User,
   Plan,
-  UserPlan,
+  UserSubscription,
   PaymentMethod,
   DedicatedServerPlan,
   App,
