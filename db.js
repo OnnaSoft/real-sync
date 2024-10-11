@@ -89,8 +89,8 @@ async function ensureDefaultPlans() {
       price: 0,
       billingPeriod: "monthly",
       realTimeChat: true,
-      voiceCalls: false,
-      videoCalls: false,
+      voiceCalls: true,
+      videoCalls: true,
       maxApps: 1,
       secureConnections: 1,
       supportLevel: "community",
@@ -105,7 +105,7 @@ async function ensureDefaultPlans() {
       billingPeriod: "monthly",
       realTimeChat: true,
       voiceCalls: true,
-      videoCalls: false,
+      videoCalls: true,
       maxApps: 3,
       secureConnections: 3,
       supportLevel: "email",
@@ -155,6 +155,12 @@ async function ensureDefaultDedicatedServerPlans() {
    * @type {Array<Omit<import("./models/DedicatedServerPlan.js").DedicatedServerPlanAttributes, "id">>}
    */
   const defaultDedicatedServerPlans = [
+    {
+      size: "Free",
+      price: 0,
+      stripePriceId: null,
+      description: "Free dedicated server for basic app needs",
+    },
     {
       size: "Small",
       price: 20,

@@ -6,7 +6,7 @@ import { Model, Sequelize } from "sequelize";
  * @property {number} id
  * @property {string} size
  * @property {number} price
- * @property {string} stripePriceId
+ * @property {string | null} [stripePriceId]
  * @property {string} description
  */
 
@@ -36,7 +36,7 @@ const DedicatedServerPlanModel = (sequelize) => {
         validate: {
           notEmpty: { msg: "Server size is required" },
           isIn: {
-            args: [["Small", "Medium", "Large", "XLarge", "XXLarge"]],
+            args: [["Free", "Small", "Medium", "Large", "XLarge", "XXLarge"]],
             msg: "Invalid server size",
           },
         },
@@ -51,7 +51,7 @@ const DedicatedServerPlanModel = (sequelize) => {
       },
       stripePriceId: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         unique: true,
         validate: {
           notEmpty: { msg: "Stripe price ID is required" },

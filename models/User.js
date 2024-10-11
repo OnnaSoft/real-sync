@@ -11,23 +11,31 @@ import { Model, Sequelize } from "sequelize";
  * @property {string} password
  * @property {string | null} [resetToken]
  * @property {Date | null} [resetTokenExpiry]
- * @property {string} [stripeCustomerId]
+ * @property {string | null} [stripeCustomerId]
+ * @property {boolean} isActive
+ * @property {Date} lastLoginAt
  */
 
 /**
  * @typedef {import("sequelize").ModelStatic<Model<
- *  UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry'> & {
- *   stripeCustomerId: string | null;
- * }
+ *  UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry' | 'lastLoginAt'>
  * >>} UserModel
  */
 
 /**
  * @param {Sequelize} sequelize
- * @returns {UserModel & {associate: (models: any) => void}}
+ * @returns {UserModel & {
+ *   associate: (models: {[key: string]: import('sequelize').ModelStatic<import('sequelize').Model>}) => void,
+ *   comparePassword: (candidatePassword: string) => Promise<boolean>
+ * }}
  */
 const UserModel = (sequelize) => {
-  /** @type {UserModel & { associate: (models: any) => void }} */
+  /**
+   * @type {UserModel & {
+   *   associate: (models: {[key: string]: import('sequelize').ModelStatic<import('sequelize').Model>}) => void,
+   *   comparePassword: (candidatePassword: string) => Promise<boolean>
+   * }}
+   */
   // @ts-ignore
   const User = sequelize.define(
     "user",
@@ -57,6 +65,10 @@ const UserModel = (sequelize) => {
           len: {
             args: [3, 50],
             msg: "Username must be between 3 and 50 characters long",
+          },
+          is: {
+            args: /^[a-zA-Z0-9_-]+$/,
+            msg: "Username can only contain letters, numbers, underscores, and hyphens",
           },
         },
       },
@@ -99,6 +111,16 @@ const UserModel = (sequelize) => {
         allowNull: true,
         unique: true,
       },
+      isActive: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      lastLoginAt: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       hooks: {
@@ -124,6 +146,14 @@ const UserModel = (sequelize) => {
               await bcrypt.hash(user.getDataValue("password"), salt)
             );
           }
+        },
+      },
+      defaultScope: {
+        attributes: { exclude: ["password", "resetToken", "resetTokenExpiry"] },
+      },
+      scopes: {
+        withPassword: {
+          attributes: { include: ["password"] },
         },
       },
     }

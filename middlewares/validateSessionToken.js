@@ -25,14 +25,14 @@ const validateSessionToken = (req, res, next) => {
      */
     async (err, session) => {
       const unauthorizedError = { error: "Unauthorized" };
-      if (err) return res.status(404).json(unauthorizedError);
-      if (!session) return res.status(404).json(unauthorizedError);
+      if (err) return res.status(401).json(unauthorizedError);
+      if (!session) return res.status(401).json(unauthorizedError);
       if (typeof session === "string")
-        return res.status(404).json(unauthorizedError);
+        return res.status(401).json(unauthorizedError);
 
       try {
         const user = await User.findOne({ where: { id: session.userId } });
-        if (!user) return res.status(404).json(unauthorizedError);
+        if (!user) return res.status(401).json(unauthorizedError);
 
         req.user = {
           id: user.getDataValue("id"),

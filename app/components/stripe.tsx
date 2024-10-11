@@ -6,16 +6,13 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { useLoaderData } from "@remix-run/react";
 import publicData from "../../public";
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
-// StripeProvider component
 export const StripeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // Initialize Stripe only once
   if (!stripePromise && publicData.STRIPE_PUBLISHABLE_KEY) {
     stripePromise = loadStripe(publicData.STRIPE_PUBLISHABLE_KEY);
   }

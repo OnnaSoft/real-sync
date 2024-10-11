@@ -1,3 +1,4 @@
+import { HttpError } from "http-errors-enhanced";
 import { DataTypes } from "sequelize";
 import { Model, Sequelize } from "sequelize";
 
@@ -10,7 +11,7 @@ import { Model, Sequelize } from "sequelize";
  * @property {boolean} enableVideoCalls
  * @property {boolean} enableConversationLogging
  * @property {number} userId
- * @property {number} [dedicatedServerPlanId]
+ * @property {number|null} [dedicatedServerPlanId]
  */
 
 /**
@@ -73,10 +74,6 @@ const AppModel = (sequelize) => {
       dedicatedServerPlanId: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        references: {
-          model: "dedicatedServerPlans",
-          key: "id",
-        },
       },
     },
     {
@@ -95,18 +92,30 @@ const AppModel = (sequelize) => {
           });
 
           if (!user) {
-            throw new Error("User not found");
+            throw new HttpError(404, "User not found", {
+              errors: { user: { message: "User not found" } },
+            });
           }
 
+          /**
+           * @type {import('sequelize').Model<import('../models/Plan.js').PlanAttributes>}
+           */
           // @ts-ignore
-          const activePlan = user["user-plans"][0]?.plan;
+          const activePlan = user.userSubscriptions[0]?.plan;
 
           if (!activePlan) {
-            throw new Error("User does not have an active plan");
+            const errMsg = "User does not have an active plan";
+            throw new HttpError(400, errMsg, {
+              errors: { plan: { message: errMsg } },
+            });
           }
 
-          if (activePlan.maxApps !== 0) {
+          const maxApps = activePlan.getDataValue("maxApps");
+          const dsPlanId = app.getDataValue("dedicatedServerPlanId");
+          if (maxApps !== 0 && !dsPlanId) {
             // 0 means unlimited
+            /** @type {number} */
+            // @ts-ignore
             const appCount = await App.count({
               // @ts-ignore
               where: {
@@ -114,10 +123,29 @@ const AppModel = (sequelize) => {
                 dedicatedServerPlanId: null,
               },
             });
-            if (appCount > activePlan.maxApps) {
-              throw new Error(
-                "Maximum number of apps reached for the current plan"
-              );
+            if (appCount >= activePlan.getDataValue("maxApps")) {
+              const errMsg = `Maximum number of apps reached for the current plan`;
+              throw new HttpError(400, errMsg, {
+                errors: { app: { message: errMsg } },
+              });
+            }
+          }
+
+          if (activePlan.getDataValue("videoCalls") === false) {
+            if (app.getDataValue("enableVideoCalls")) {
+              const errMsg = `Video calls are not enabled for the current plan`;
+              throw new HttpError(400, errMsg, {
+                errors: { app: { message: errMsg } },
+              });
+            }
+          }
+
+          if (activePlan.getDataValue("voiceCalls") === false) {
+            if (app.getDataValue("enableCalls")) {
+              const errMsg = `Calls are not enabled for the current plan`;
+              throw new HttpError(400, errMsg, {
+                errors: { app: { message: errMsg } },
+              });
             }
           }
         },

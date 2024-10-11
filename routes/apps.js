@@ -1,13 +1,5 @@
 import express from "express";
-import {
-  App,
-  ApiKey,
-  DedicatedServerPlan,
-  User,
-  Plan,
-  UserSubscription,
-  sequelize,
-} from "../db.js";
+import { App, ApiKey, DedicatedServerPlan, User, sequelize } from "../db.js";
 import validateSessionToken from "../middlewares/validateSessionToken.js";
 import stripe from "../lib/stripe.js";
 import { HttpError } from "http-errors-enhanced";
@@ -59,58 +51,15 @@ router.post(
     } = req.body;
     const userId = req.user.id;
 
-    const transaction = await sequelize.transaction();
+    /** @type {Transaction | null} */
+    let transaction = null;
 
     try {
-      const user = await User.findByPk(userId, {
-        include: [
-          {
-            model: UserSubscription,
-            where: { status: "active" },
-            include: [Plan],
-          },
-        ],
+      transaction = await sequelize.transaction();
+
+      const user = await User.findByPk(userId).catch(() => {
+        throw new HttpError(500, "Error retrieving user");
       });
-
-      if (!user) {
-        await transaction.rollback();
-        throw new HttpError(404, "User not found", {
-          errors: { user: { message: "User not found" } },
-        });
-      }
-
-      /**
-       * @type {import('sequelize').Model<import('../models/Plan.js').PlanAttributes>}
-       */
-      // @ts-ignore
-      const activePlan = user["user-plans"][0].plan;
-
-      if (!activePlan) {
-        await transaction.rollback();
-        throw new HttpError(400, "User does not have an active plan", {
-          errors: { plan: { message: "User does not have an active plan" } },
-        });
-      }
-
-      if (activePlan.getDataValue("maxApps") !== 0 && !dedicatedServerPlanId) {
-        // 0 means unlimited
-        const appCount = await App.count({ where: { userId } });
-        if (appCount >= activePlan.getDataValue("maxApps")) {
-          await transaction.rollback();
-          throw new HttpError(
-            400,
-            "Maximum number of apps reached for the current plan",
-            {
-              errors: {
-                app: {
-                  message:
-                    "Maximum number of apps reached for the current plan",
-                },
-              },
-            }
-          );
-        }
-      }
 
       /**
        * @type {import('sequelize').Model<
@@ -133,6 +82,20 @@ router.post(
             },
           });
         }
+      } else {
+        dedicatedServerPlan = await DedicatedServerPlan.findOne({
+          where: { size: "Free" },
+        });
+        if (!dedicatedServerPlan) {
+          await transaction.rollback();
+          throw new HttpError(404, "Default dedicated server plan not found", {
+            errors: {
+              dedicatedServerPlan: {
+                message: "Default dedicated server plan not found",
+              },
+            },
+          });
+        }
       }
 
       const newApp = await App.create(
@@ -143,12 +106,15 @@ router.post(
           enableVideoCalls,
           enableConversationLogging,
           userId,
-          dedicatedServerPlanId,
+          dedicatedServerPlanId: dedicatedServerPlan.getDataValue("id"),
         },
         { transaction }
-      );
+      ).catch(() => {
+        throw new HttpError(500, "Error creating app");
+      });
 
-      if (dedicatedServerPlan) {
+      const stripePriceId = dedicatedServerPlan.getDataValue("stripePriceId");
+      if (dedicatedServerPlan && stripePriceId) {
         const stripeCustomer = await stripe.customers.retrieve(
           // @ts-ignore
           user.stripeCustomerId
@@ -157,7 +123,7 @@ router.post(
           .create({
             customer: stripeCustomer.id,
             // @ts-ignore
-            items: [{ price: dedicatedServerPlan.stripePriceId }],
+            items: [{ price: stripePriceId }],
           })
           .catch((error) => {
             throw new HttpError(400, "Error creating subscription", error);
@@ -172,7 +138,7 @@ router.post(
         app: newApp,
       });
     } catch (error) {
-      await transaction.rollback();
+      if (transaction) await transaction.rollback();
       next(error);
     }
   }

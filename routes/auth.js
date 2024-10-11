@@ -224,6 +224,7 @@ router.post(
           email,
           password,
           stripeCustomerId: stripeCustomer.id,
+          isActive: true,
         },
         { transaction }
       ).catch((error) => {
