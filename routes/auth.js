@@ -83,7 +83,7 @@ router.post(
     }
 
     try {
-      const user = await User.findOne({
+      const user = await User.scope('withPassword').findOne({
         where: {
           [Op.or]: [{ username }, { email: username }],
         },
