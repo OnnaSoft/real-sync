@@ -7,7 +7,7 @@ interface JwtPayload {
   username: string;
 }
 
-interface RequestWithUser extends Request {
+export interface RequestWithUser extends Request {
   user?: {
     id: number;
     username: string;
