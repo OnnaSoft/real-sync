@@ -1,6 +1,6 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface TunnelAttributes {
+export interface TunnelAttributes {
   id: number;
   subdomain: string;
   userId: number;
@@ -8,7 +8,7 @@ interface TunnelAttributes {
   updatedAt: Date;
 }
 
-interface TunnelCreationAttributes extends Omit<TunnelAttributes, "id" | "createdAt" | "updatedAt"> {}
+export interface TunnelCreationAttributes extends Omit<TunnelAttributes, "id" | "createdAt" | "updatedAt"> {}
 
 interface TunnelInstance extends Model<TunnelAttributes, TunnelCreationAttributes>, TunnelAttributes {
   createdAt: Date;

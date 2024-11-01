@@ -1,7 +1,7 @@
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";
-import "./init.js";
-import "./db.js";
+import "./init";
+import "./db";
 import api from "./routes";
 
 // Validate environment variables

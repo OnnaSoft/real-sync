@@ -1,10 +1,10 @@
 import { Sequelize } from "sequelize";
 import UserModel from "./models/User.js";
-import PlanModel from "./models/Plan.js";
+import PlanModel, { PlanAttributes } from "./models/Plan.js";
 import PaymentMethodModel from "./models/PaymentMethod.js";
 import AppModel from "./models/App.js";
 import ApiKeyModel from "./models/ApiKey.js";
-import DedicatedServerPlanModel from "./models/DedicatedServerPlan.js";
+import DedicatedServerPlanModel, { DedicatedServerPlanAttributes } from "./models/DedicatedServerPlan.js";
 import StripeEventModel from "./models/StripeEvent.js";
 import UserSubscriptionModel from "./models/UserSubscription.js";
 
@@ -79,10 +79,7 @@ sequelize.models = models;
 
 // Function to create or update default plans
 async function ensureDefaultPlans() {
-  /**
-   * @type {Array<Omit<import("./models/Plan.js").PlanAttributes, "id">>}
-   */
-  const defaultPlans = [
+  const defaultPlans: Array<Omit<PlanAttributes, "id">> = [
     {
       code: "FREE",
       name: "Free",
@@ -151,10 +148,7 @@ async function ensureDefaultPlans() {
 
 // Function to create or update default dedicated server plans
 async function ensureDefaultDedicatedServerPlans() {
-  /**
-   * @type {Array<Omit<import("./models/DedicatedServerPlan.js").DedicatedServerPlanAttributes, "id">>}
-   */
-  const defaultDedicatedServerPlans = [
+  const defaultDedicatedServerPlans: Array<Omit<DedicatedServerPlanAttributes, "id">> = [
     {
       size: "Free",
       price: 0,

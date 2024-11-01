@@ -1,6 +1,6 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface PlanAttributes {
+export interface PlanAttributes {
   id: number;
   code: string;
   name: string;
@@ -17,7 +17,7 @@ interface PlanAttributes {
   stripePriceId: string;
 }
 
-interface PlanCreationAttributes extends Omit<PlanAttributes, "id"> {}
+export interface PlanCreationAttributes extends Omit<PlanAttributes, "id"> {}
 
 interface PlanInstance extends Model<PlanAttributes, PlanCreationAttributes>, PlanAttributes {
   createdAt?: Date;

@@ -1,7 +1,7 @@
 import { HttpError } from "http-errors-enhanced";
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface AppAttributes {
+export interface AppAttributes {
   id: number;
   name: string;
   description: string | null;
@@ -12,7 +12,7 @@ interface AppAttributes {
   dedicatedServerPlanId: number | null;
 }
 
-interface AppCreationAttributes extends Omit<AppAttributes, "id"> {}
+export interface AppCreationAttributes extends Omit<AppAttributes, "id"> {}
 
 interface AppInstance extends Model<AppAttributes, AppCreationAttributes>, AppAttributes {
   createdAt?: Date;

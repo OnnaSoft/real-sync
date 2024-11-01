@@ -1,6 +1,6 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface UserSubscriptionAttributes {
+export interface UserSubscriptionAttributes {
   id: number;
   userId: number;
   stripePriceId: string;
@@ -12,7 +12,7 @@ interface UserSubscriptionAttributes {
   stripeSubscriptionItemId: string | null;
 }
 
-interface UserSubscriptionCreationAttributes extends Omit<UserSubscriptionAttributes, "id"> {}
+export interface UserSubscriptionCreationAttributes extends Omit<UserSubscriptionAttributes, "id"> {}
 
 interface UserSubscriptionInstance extends Model<UserSubscriptionAttributes, UserSubscriptionCreationAttributes>, UserSubscriptionAttributes {
   createdAt?: Date;

@@ -1,13 +1,13 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface StripeEventAttributes {
+export interface StripeEventAttributes {
   id: number;
   eventId: string;
   type: string;
   data: object;
 }
 
-interface StripeEventCreationAttributes extends Omit<StripeEventAttributes, "id"> {}
+export interface StripeEventCreationAttributes extends Omit<StripeEventAttributes, "id"> {}
 
 interface StripeEventInstance extends Model<StripeEventAttributes, StripeEventCreationAttributes>, StripeEventAttributes {
   createdAt?: Date;

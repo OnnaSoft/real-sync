@@ -1,13 +1,13 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface ApiKeyAttributes {
+export interface ApiKeyAttributes {
   id: number;
   key: string;
   lastUsed: Date | null;
   appId: number;
 }
 
-interface ApiKeyCreationAttributes extends Omit<ApiKeyAttributes, "id"> {}
+export interface ApiKeyCreationAttributes extends Omit<ApiKeyAttributes, "id"> {}
 
 interface ApiKeyInstance extends Model<ApiKeyAttributes, ApiKeyCreationAttributes>, ApiKeyAttributes {
   createdAt?: Date;

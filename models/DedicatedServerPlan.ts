@@ -1,6 +1,6 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface DedicatedServerPlanAttributes {
+export interface DedicatedServerPlanAttributes {
   id: number;
   size: "Free" | "Small" | "Medium" | "Large" | "XLarge" | "XXLarge";
   price: number;
@@ -8,7 +8,7 @@ interface DedicatedServerPlanAttributes {
   description: string;
 }
 
-interface DedicatedServerPlanCreationAttributes extends Omit<DedicatedServerPlanAttributes, "id"> {}
+export interface DedicatedServerPlanCreationAttributes extends Omit<DedicatedServerPlanAttributes, "id"> {}
 
 interface DedicatedServerPlanInstance
   extends Model<DedicatedServerPlanAttributes, DedicatedServerPlanCreationAttributes>,

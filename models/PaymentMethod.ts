@@ -1,6 +1,6 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-interface PaymentMethodAttributes {
+export interface PaymentMethodAttributes {
   id: number;
   userId: number;
   type: 'credit' | 'debit';
@@ -12,7 +12,7 @@ interface PaymentMethodAttributes {
   stripePaymentMethodId: string;
 }
 
-interface PaymentMethodCreationAttributes extends Omit<PaymentMethodAttributes, "id"> {}
+export interface PaymentMethodCreationAttributes extends Omit<PaymentMethodAttributes, "id"> {}
 
 interface PaymentMethodInstance
   extends Model<PaymentMethodAttributes, PaymentMethodCreationAttributes>,

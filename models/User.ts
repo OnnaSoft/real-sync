@@ -1,7 +1,7 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 import bcrypt from "bcrypt";
 
-interface UserAttributes {
+export interface UserAttributes {
   id: number;
   fullname: string;
   username: string;
@@ -14,7 +14,7 @@ interface UserAttributes {
   lastLoginAt: Date;
 }
 
-interface UserCreationAttributes extends Omit<UserAttributes, "id" | "resetToken" | "resetTokenExpiry" | "lastLoginAt"> {}
+export interface UserCreationAttributes extends Omit<UserAttributes, "id" | "resetToken" | "resetTokenExpiry" | "lastLoginAt"> {}
 
 interface UserInstance extends Model<UserAttributes, UserCreationAttributes>, UserAttributes {
   createdAt?: Date;
