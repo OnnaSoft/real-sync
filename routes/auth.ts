@@ -1,11 +1,11 @@
-import express from "express";
-import { User, Plan, UserSubscription, sequelize } from "../db.js";
+import express, { Request, Response, NextFunction } from "express";
+import { User, Plan, UserSubscription, sequelize } from "../db";
 import { Op, Transaction } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Resend } from "resend";
-import crypto from "node:crypto";
-import stripe from "../lib/stripe.js";
+import crypto from "crypto";
+import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 
 const router = express.Router();
@@ -33,45 +33,39 @@ const JWT_SECRET = process.env.JWT_SECRET ?? "";
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-/**
- * @typedef {import('../types/http.d.ts').ErrorsMap} ErrorsMap
- */
+interface ErrorsMap {
+  [key: string]: { message: string };
+}
 
-/**
- * @typedef {Object} LoginQuery
- * @property {string} [redirect] - Optional redirect URL after login
- */
+interface LoginQuery {
+  redirect?: string;
+}
 
-/**
- * @typedef {Object} LoginBody
- * @property {string} username
- * @property {string} password
- */
+interface LoginBody {
+  username: string;
+  password: string;
+}
 
-/**
- * @typedef {Object} UserData
- * @property {number} id - ID of the user
- * @property {string} fullname - Full name of the user
- * @property {string} username - Username of the user
- * @property {string} email - Email of the user
- */
+interface UserData {
+  id: number;
+  fullname: string;
+  username: string;
+  email: string;
+}
 
-/**
- * @typedef {Object} LoginSuccessResBody
- * @property {string} message - Success message
- * @property {UserData} user - User data
- * @property {string} token - JWT token
- */
+interface LoginSuccessResBody {
+  message: string;
+  user: UserData;
+  token: string;
+}
 
 router.post(
   "/login",
-  /**
-   * POST /login
-   * @param {express.Request<{}, LoginSuccessResBody, LoginBody, LoginQuery>} req
-   * @param {express.Response<LoginSuccessResBody>} res
-   * @param {express.NextFunction} next
-   */
-  async (req, res, next) => {
+  async (
+    req: Request<{}, LoginSuccessResBody, LoginBody, LoginQuery>,
+    res: Response<LoginSuccessResBody>,
+    next: NextFunction
+  ) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -87,8 +81,6 @@ router.post(
         where: {
           [Op.or]: [{ username }, { email: username }],
         },
-      }).catch(() => {
-        throw new HttpError(500, "Error finding user");
       });
 
       if (!user) {
@@ -98,11 +90,7 @@ router.post(
       }
 
       const hashedPassword = user.getDataValue("password");
-      const isPasswordValid = await bcrypt
-        .compare(password, hashedPassword)
-        .catch(() => {
-          throw new HttpError(500, "Error comparing passwords");
-        });
+      const isPasswordValid = await bcrypt.compare(password, hashedPassword);
 
       if (!isPasswordValid) {
         throw new HttpError(400, "Invalid username or password", {
@@ -136,52 +124,41 @@ router.post(
   }
 );
 
-/**
- * @typedef {Object} LogoutResBody
- * @property {string} message - Response message
- */
+interface LogoutResBody {
+  message: string;
+}
 
 router.get(
   "/logout",
-  /**
-   * GET /logout
-   * @param {express.Request} req
-   * @param {express.Response<LogoutResBody>} res
-   */
-  (req, res) => {
+  (req: Request, res: Response<LogoutResBody>) => {
     // Here you would typically destroy the session or invalidate the JWT token
     // For this example, we'll just return a success message
     res.send({ message: "Logged out successfully" });
   }
 );
 
-/**
- * @typedef {Object} RegisterBody
- * @property {string} fullname
- * @property {string} username
- * @property {string} email
- * @property {string} password
- */
+interface RegisterBody {
+  fullname: string;
+  username: string;
+  email: string;
+  password: string;
+}
 
-/**
- * @typedef {Object} RegisterSuccessResBody
- * @property {string} message - Success message
- * @property {number} userId - ID of the newly registered user
- */
+interface RegisterSuccessResBody {
+  message: string;
+  userId: number;
+}
 
 router.post(
   "/register",
-  /**
-   * POST /register
-   * @param {express.Request<{}, RegisterSuccessResBody, RegisterBody>} req
-   * @param {express.Response<RegisterSuccessResBody>} res
-   * @param {express.NextFunction} next
-   */
-  async (req, res, next) => {
+  async (
+    req: Request<{}, RegisterSuccessResBody, RegisterBody>,
+    res: Response<RegisterSuccessResBody>,
+    next: NextFunction
+  ) => {
     const { fullname, username, email, password } = req.body;
 
-    /** @type {Transaction | null} */
-    let transaction = null;
+    let transaction: Transaction | null = null;
 
     try {
       transaction = await sequelize.transaction();
@@ -190,16 +167,11 @@ router.post(
         where: {
           [Op.or]: [{ username }, { email }],
         },
-      }).catch(() => {
-        throw new HttpError(500, "Error finding user");
       });
 
       if (existingUser) {
-        await transaction.rollback().catch(() => {
-          throw new HttpError(500, "Error rolling back transaction");
-        });
-        /** @type {ErrorsMap} */
-        const errors = {};
+        await transaction.rollback();
+        const errors: ErrorsMap = {};
         if (existingUser.getDataValue("username") === username) {
           errors.username = { message: "Username already exists" };
         }
@@ -210,11 +182,7 @@ router.post(
       }
 
       // Create Stripe customer
-      const stripeCustomer = await stripe.customers
-        .create({ email, name: fullname })
-        .catch(() => {
-          throw new HttpError(500, "Error creating Stripe customer");
-        });
+      const stripeCustomer = await stripe.customers.create({ email, name: fullname });
 
       // Create new user
       const newUser = await User.create(
@@ -227,30 +195,11 @@ router.post(
           isActive: true,
         },
         { transaction }
-      ).catch((error) => {
-        /**
-         * @type {import("sequelize").ValidationError}
-         */
-        // @ts-ignore
-        const err = error;
-
-        if (err.name === "SequelizeValidationError") {
-          /** @type {ErrorsMap} */
-          const errors = {};
-          err.errors.forEach((validationError, index) => {
-            const errorKey = validationError.path || `error_${index}`;
-            errors[errorKey] = { message: validationError.message };
-          });
-          throw new HttpError(400, "Validation error", { errors });
-        }
-        throw new HttpError(500, "Error creating user");
-      });
+      );
 
       // Find the free plan
       const freePlan = await Plan.findOne({
         where: { code: "FREE" },
-      }).catch(() => {
-        throw new HttpError(500, "Error finding free plan");
       });
 
       if (!freePlan) {
@@ -259,14 +208,10 @@ router.post(
       }
 
       // Create Stripe subscription for the free plan
-      const subscription = await stripe.subscriptions
-        .create({
-          customer: stripeCustomer.id,
-          items: [{ price: freePlan.getDataValue("stripePriceId") }],
-        })
-        .catch(() => {
-          throw new HttpError(500, "Error creating Stripe subscription");
-        });
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomer.id,
+        items: [{ price: freePlan.getDataValue("stripePriceId") }],
+      });
 
       // Assign the free plan to the user
       await UserSubscription.create(
@@ -279,13 +224,9 @@ router.post(
           stripeSubscriptionItemId: subscription.items.data[0].id,
         },
         { transaction }
-      ).catch(() => {
-        throw new HttpError(500, "Error creating user plan");
-      });
+      );
 
-      await transaction.commit().catch((err) => {
-        throw new HttpError(500, "Error committing transaction");
-      });
+      await transaction.commit();
 
       res.status(201).json({
         message: "User registered successfully and assigned free plan",
@@ -298,30 +239,25 @@ router.post(
   }
 );
 
-/**
- * @typedef {Object} ForgotPasswordBody
- * @property {string} email - Email address for password reset
- */
+interface ForgotPasswordBody {
+  email: string;
+}
 
-/**
- * @typedef {Object} ForgotPasswordSuccessResBody
- * @property {string} message - Success message
- */
+interface ForgotPasswordSuccessResBody {
+  message: string;
+}
+
 router.post(
   "/forgot-password",
-  /**
-   * POST /forgot-password
-   * @param {express.Request<{}, ForgotPasswordSuccessResBody, ForgotPasswordBody>} req
-   * @param {express.Response<ForgotPasswordSuccessResBody>} res
-   * @param {express.NextFunction} next
-   */
-  async (req, res, next) => {
+  async (
+    req: Request<{}, ForgotPasswordSuccessResBody, ForgotPasswordBody>,
+    res: Response<ForgotPasswordSuccessResBody>,
+    next: NextFunction
+  ) => {
     const { email } = req.body;
 
     try {
-      const user = await User.findOne({ where: { email } }).catch(() => {
-        throw new HttpError(500, "Error finding user");
-      });
+      const user = await User.findOne({ where: { email } });
 
       if (!user) {
         throw new HttpError(404, "No user found with this email address", {
@@ -336,22 +272,17 @@ router.post(
       const resetTokenExpiry = new Date(Date.now() + 3600000); // Token expires in 1 hour
 
       // Update user with reset token and expiry
-      await user
-        .update({
-          resetToken,
-          resetTokenExpiry,
-        })
-        .catch(() => {
-          throw new HttpError(500, "Error updating user");
-        });
+      await user.update({
+        resetToken,
+        resetTokenExpiry,
+      });
 
       // Send password reset email using Resend
-      const { error } = await resend.emails
-        .send({
-          from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
-          to: user.getDataValue("email"),
-          subject: "Password Reset Request",
-          html: `
+      const { error } = await resend.emails.send({
+        from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        to: user.getDataValue("email"),
+        subject: "Password Reset Request",
+        html: `
           <!DOCTYPE html>
           <html lang="en">
           <head>
@@ -386,10 +317,7 @@ router.post(
           </body>
           </html>
         `,
-        })
-        .catch(() => {
-          throw new HttpError(500, "Failed to send reset email");
-        });
+      });
 
       if (error) {
         throw new HttpError(500, "Failed to send reset email");
@@ -404,26 +332,22 @@ router.post(
   }
 );
 
-/**
- * @typedef {Object} ResetPasswordBody
- * @property {string} token
- * @property {string} newPassword
- */
+interface ResetPasswordBody {
+  token: string;
+  newPassword: string;
+}
 
-/**
- * @typedef {Object} ResetPasswordSuccessResBody
- * @property {string} message - Success message
- */
+interface ResetPasswordSuccessResBody {
+  message: string;
+}
 
 router.post(
   "/reset-password",
-  /**
-   * POST /reset-password
-   * @param {express.Request<{}, ResetPasswordSuccessResBody, ResetPasswordBody>} req
-   * @param {express.Response<ResetPasswordSuccessResBody>} res
-   * @param {express.NextFunction} next
-   */
-  async (req, res, next) => {
+  async (
+    req: Request<{}, ResetPasswordSuccessResBody, ResetPasswordBody>,
+    res: Response<ResetPasswordSuccessResBody>,
+    next: NextFunction
+  ) => {
     const { token, newPassword } = req.body;
     try {
       const user = await User.findOne({
@@ -431,8 +355,6 @@ router.post(
           resetToken: token,
           resetTokenExpiry: { [Op.gt]: new Date() },
         },
-      }).catch(() => {
-        throw new HttpError(500, "Error finding user");
       });
 
       if (!user) {
@@ -442,15 +364,11 @@ router.post(
       }
 
       // Update user's password and clear reset token fields
-      await user
-        .update({
-          password: newPassword,
-          resetToken: null,
-          resetTokenExpiry: null,
-        })
-        .catch(() => {
-          throw new HttpError(500, "Error resetting password");
-        });
+      await user.update({
+        password: newPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      });
 
       res.status(200).json({
         message: "Password has been reset successfully",

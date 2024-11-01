@@ -1,27 +1,28 @@
-import { DataTypes } from "sequelize";
-import { Model, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic, Association } from "sequelize";
 
-/**
- * @typedef {Object} DedicatedServerPlanAttributes
- * @property {number} id
- * @property {string} size
- * @property {number} price
- * @property {string | null} [stripePriceId]
- * @property {string} description
- */
+interface DedicatedServerPlanAttributes {
+  id: number;
+  size: "Free" | "Small" | "Medium" | "Large" | "XLarge" | "XXLarge";
+  price: number;
+  stripePriceId: string | null;
+  description: string;
+}
 
-/**
- * @typedef {import("sequelize").ModelStatic<Model<DedicatedServerPlanAttributes, Omit<DedicatedServerPlanAttributes, 'id'>>>} DedicatedServerPlanModel
- */
+interface DedicatedServerPlanCreationAttributes extends Omit<DedicatedServerPlanAttributes, "id"> {}
 
-/**
- * @param {Sequelize} sequelize
- * @returns {DedicatedServerPlanModel & {associate: (models: any) => void}}
- */
-const DedicatedServerPlanModel = (sequelize) => {
-  /** @type {DedicatedServerPlanModel & { associate: (models: any) => void }} */
-  // @ts-ignore
-  const DedicatedServerPlan = sequelize.define(
+interface DedicatedServerPlanInstance
+  extends Model<DedicatedServerPlanAttributes, DedicatedServerPlanCreationAttributes>,
+    DedicatedServerPlanAttributes {
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface DedicatedServerPlanModel extends ModelStatic<DedicatedServerPlanInstance> {
+  associate: (models: { [key: string]: ModelStatic<Model> }) => void;
+}
+
+const DedicatedServerPlanModel = (sequelize: Sequelize): DedicatedServerPlanModel => {
+  const DedicatedServerPlan = sequelize.define<DedicatedServerPlanInstance>(
     "dedicatedServerPlan",
     {
       id: {
@@ -68,18 +69,14 @@ const DedicatedServerPlanModel = (sequelize) => {
     {
       timestamps: true,
     }
-  );
+  ) as DedicatedServerPlanModel;
 
-  DedicatedServerPlan.associate =
-    /**
-     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
-     */
-    (models) => {
-      DedicatedServerPlan.hasMany(models.App, {
-        foreignKey: "dedicatedServerPlanId",
-        as: "apps",
-      });
-    };
+  DedicatedServerPlan.associate = (models: { [key: string]: ModelStatic<Model> }) => {
+    DedicatedServerPlan.hasMany(models.App, {
+      foreignKey: "dedicatedServerPlanId",
+      as: "apps",
+    });
+  };
 
   return DedicatedServerPlan;
 };

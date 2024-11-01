@@ -1,36 +1,35 @@
-import { DataTypes } from "sequelize";
-import { Model, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic, Association } from "sequelize";
 
-/**
- * @typedef {Object} PlanAttributes
- * @property {number} id
- * @property {string} code
- * @property {string} name
- * @property {number} price
- * @property {'monthly' | 'yearly'} billingPeriod
- * @property {boolean} realTimeChat
- * @property {boolean} voiceCalls
- * @property {boolean} videoCalls
- * @property {number} maxApps
- * @property {number} secureConnections
- * @property {'community' | 'email' | 'priority' | 'dedicated'} supportLevel
- * @property {boolean} apiIntegration
- * @property {boolean} dedicatedAccountManager
- * @property {string} stripePriceId
- */
+interface PlanAttributes {
+  id: number;
+  code: string;
+  name: string;
+  price: number;
+  billingPeriod: 'monthly' | 'yearly';
+  realTimeChat: boolean;
+  voiceCalls: boolean;
+  videoCalls: boolean;
+  maxApps: number;
+  secureConnections: number;
+  supportLevel: 'community' | 'email' | 'priority' | 'dedicated';
+  apiIntegration: boolean;
+  dedicatedAccountManager: boolean;
+  stripePriceId: string;
+}
 
-/**
- * @typedef {import("sequelize").ModelStatic<Model<PlanAttributes, Omit<PlanAttributes, 'id'>>>} PlanModel
- */
+interface PlanCreationAttributes extends Omit<PlanAttributes, "id"> {}
 
-/**
- * @param {Sequelize} sequelize
- * @returns {PlanModel & {associate: (models: any) => void}}
- */
-const PlanModel = (sequelize) => {
-  /** @type {PlanModel & { associate: (models: any) => void }} */
-  // @ts-ignore
-  const Plan = sequelize.define(
+interface PlanInstance extends Model<PlanAttributes, PlanCreationAttributes>, PlanAttributes {
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface PlanModel extends ModelStatic<PlanInstance> {
+  associate: (models: { [key: string]: ModelStatic<Model> }) => void;
+}
+
+const PlanModel = (sequelize: Sequelize): PlanModel => {
+  const Plan = sequelize.define<PlanInstance>(
     "plan",
     {
       id: {
@@ -143,15 +142,11 @@ const PlanModel = (sequelize) => {
     {
       timestamps: true,
     }
-  );
+  ) as PlanModel;
 
-  Plan.associate =
-    /**
-     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
-     */
-    (models) => {
-      Plan.hasMany(models.UserSubscription, { foreignKey: "planId" });
-    };
+  Plan.associate = (models: { [key: string]: ModelStatic<Model> }) => {
+    Plan.hasMany(models.UserSubscription, { foreignKey: "planId" });
+  };
 
   return Plan;
 };

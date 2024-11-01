@@ -1,12 +1,13 @@
 import express from "express";
 import { HttpError } from "http-errors-enhanced";
-import authRouter from "./auth.js";
-import plansRouter from "./plans.js";
-import usersRouter from "./users.js";
-import paymentMethodRouter from "./payment-methods.js";
-import appDedicatedServerPlansRouter from "./app-dedicated-server-plans.js";
-import appsRouter from "./apps.js";
-import webhookRouter from "./webhooks.js";
+import authRouter from "./auth";
+import plansRouter from "./plans";
+import usersRouter from "./users";
+import paymentMethodRouter from "./payment-methods";
+import appDedicatedServerPlansRouter from "./app-dedicated-server-plans";
+import appsRouter from "./apps";
+import webhookRouter from "./webhooks";
+import { ErrorResBody } from "../types/http";
 
 const api = express.Router();
 api.use("/webhook", webhookRouter);
@@ -22,14 +23,7 @@ api.use("/app-dedicated-server-plans", appDedicatedServerPlansRouter);
 api.use("/apps", appsRouter);
 
 api.use(
-  /**
-   *
-   * @param {Error | HttpError & import('../types/http.js').ErrorResBody} err
-   * @param {express.Request} req
-   * @param {express.Response} res
-   * @param {express.NextFunction} next
-   */
-  (err, req, res, next) => {
+  (err: Error | HttpError & ErrorResBody, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err instanceof HttpError) {
       if (err.errors) {
         return res.status(err.statusCode).json({ errors: err.errors });

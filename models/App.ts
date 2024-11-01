@@ -1,31 +1,30 @@
 import { HttpError } from "http-errors-enhanced";
-import { DataTypes } from "sequelize";
-import { Model, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic, Association } from "sequelize";
 
-/**
- * @typedef {Object} AppAttributes
- * @property {number} id
- * @property {string} name
- * @property {string} description
- * @property {boolean} enableCalls
- * @property {boolean} enableVideoCalls
- * @property {boolean} enableConversationLogging
- * @property {number} userId
- * @property {number|null} [dedicatedServerPlanId]
- */
+interface AppAttributes {
+  id: number;
+  name: string;
+  description: string | null;
+  enableCalls: boolean;
+  enableVideoCalls: boolean;
+  enableConversationLogging: boolean;
+  userId: number;
+  dedicatedServerPlanId: number | null;
+}
 
-/**
- * @typedef {import("sequelize").ModelStatic<Model<AppAttributes, Omit<AppAttributes, 'id'>>>} AppModel
- */
+interface AppCreationAttributes extends Omit<AppAttributes, "id"> {}
 
-/**
- * @param {Sequelize} sequelize
- * @returns {AppModel & {associate: (models: any) => void}}
- */
-const AppModel = (sequelize) => {
-  /** @type {AppModel & { associate: (models: any) => void }} */
-  // @ts-ignore
-  const App = sequelize.define(
+interface AppInstance extends Model<AppAttributes, AppCreationAttributes>, AppAttributes {
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface AppModel extends ModelStatic<AppInstance> {
+  associate: (models: { [key: string]: ModelStatic<Model> }) => void;
+}
+
+const AppModel = (sequelize: Sequelize): AppModel => {
+  const App = sequelize.define<AppInstance>(
     "app",
     {
       id: {
@@ -79,9 +78,9 @@ const AppModel = (sequelize) => {
     {
       timestamps: true,
       hooks: {
-        beforeCreate: async (app) => {
+        beforeCreate: async (app: AppInstance) => {
           const { User, Plan, UserSubscription } = sequelize.models;
-          const user = await User.findByPk(app.getDataValue("userId"), {
+          const user = await User.findByPk(app.userId, {
             include: [
               {
                 model: UserSubscription,
@@ -97,11 +96,7 @@ const AppModel = (sequelize) => {
             });
           }
 
-          /**
-           * @type {import('sequelize').Model<import('../models/Plan.js').PlanAttributes>}
-           */
-          // @ts-ignore
-          const activePlan = user.userSubscriptions[0]?.plan;
+          const activePlan = (user as any).userSubscriptions[0]?.plan;
 
           if (!activePlan) {
             const errMsg = "User does not have an active plan";
@@ -110,20 +105,16 @@ const AppModel = (sequelize) => {
             });
           }
 
-          const maxApps = activePlan.getDataValue("maxApps");
-          const dsPlanId = app.getDataValue("dedicatedServerPlanId");
-          if (maxApps !== 0 && !dsPlanId) {
+          const maxApps = activePlan.maxApps;
+          if (maxApps !== 0 && !app.dedicatedServerPlanId) {
             // 0 means unlimited
-            /** @type {number} */
-            // @ts-ignore
             const appCount = await App.count({
-              // @ts-ignore
               where: {
-                userId: app.getDataValue("userId"),
+                userId: app.userId,
                 dedicatedServerPlanId: null,
               },
             });
-            if (appCount >= activePlan.getDataValue("maxApps")) {
+            if (appCount >= maxApps) {
               const errMsg = `Maximum number of apps reached for the current plan`;
               throw new HttpError(400, errMsg, {
                 errors: { app: { message: errMsg } },
@@ -131,8 +122,8 @@ const AppModel = (sequelize) => {
             }
           }
 
-          if (activePlan.getDataValue("videoCalls") === false) {
-            if (app.getDataValue("enableVideoCalls")) {
+          if (activePlan.videoCalls === false) {
+            if (app.enableVideoCalls) {
               const errMsg = `Video calls are not enabled for the current plan`;
               throw new HttpError(400, errMsg, {
                 errors: { app: { message: errMsg } },
@@ -140,8 +131,8 @@ const AppModel = (sequelize) => {
             }
           }
 
-          if (activePlan.getDataValue("voiceCalls") === false) {
-            if (app.getDataValue("enableCalls")) {
+          if (activePlan.voiceCalls === false) {
+            if (app.enableCalls) {
               const errMsg = `Calls are not enabled for the current plan`;
               throw new HttpError(400, errMsg, {
                 errors: { app: { message: errMsg } },
@@ -151,20 +142,16 @@ const AppModel = (sequelize) => {
         },
       },
     }
-  );
+  ) as AppModel;
 
-  App.associate =
-    /**
-     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
-     */
-    (models) => {
-      App.belongsTo(models.User, { foreignKey: "userId" });
-      App.belongsTo(models.DedicatedServerPlan, {
-        foreignKey: "dedicatedServerPlanId",
-        as: "dedicatedServerPlan",
-      });
-      App.hasMany(models.ApiKey, { foreignKey: "appId", as: "apiKeys" });
-    };
+  App.associate = (models: { [key: string]: ModelStatic<Model> }) => {
+    App.belongsTo(models.User, { foreignKey: "userId" });
+    App.belongsTo(models.DedicatedServerPlan, {
+      foreignKey: "dedicatedServerPlanId",
+      as: "dedicatedServerPlan",
+    });
+    App.hasMany(models.ApiKey, { foreignKey: "appId", as: "apiKeys" });
+  };
 
   return App;
 };

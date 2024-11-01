@@ -1,30 +1,30 @@
-import { DataTypes, Model, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic, Association } from "sequelize";
 
-/**
- * @typedef {Object} UserSubscriptionAttributes
- * @property {number} id
- * @property {number} userId
- * @property {string} stripePriceId
- * @property {string} stripeSubscriptionId
- * @property {Date} activatedAt
- * @property {Date|null} [cancelRequestedAt]
- * @property {Date|null} [effectiveCancelDate]
- * @property {'active' | 'pending_cancellation' | 'inactive' | 'cancelled'} status
- * @property {string} stripeSubscriptionItemId
- */
+interface UserSubscriptionAttributes {
+  id: number;
+  userId: number;
+  stripePriceId: string;
+  stripeSubscriptionId: string;
+  activatedAt: Date;
+  cancelRequestedAt?: Date | null;
+  effectiveCancelDate?: Date | null;
+  status: 'active' | 'pending_cancellation' | 'inactive' | 'cancelled';
+  stripeSubscriptionItemId: string | null;
+}
 
-/**
- * @typedef {import("sequelize").ModelStatic<Model<UserSubscriptionAttributes, Omit<UserSubscriptionAttributes, 'id'>>>} UserSubscriptionModel
- */
+interface UserSubscriptionCreationAttributes extends Omit<UserSubscriptionAttributes, "id"> {}
 
-/**
- * @param {Sequelize} sequelize
- * @returns {UserSubscriptionModel & {associate: (models: any) => void}}
- */
-const UserSubscriptionModel = (sequelize) => {
-  /** @type {UserSubscriptionModel & { associate: (models: any) => void }} */
-  // @ts-ignore
-  const UserSubscription = sequelize.define(
+interface UserSubscriptionInstance extends Model<UserSubscriptionAttributes, UserSubscriptionCreationAttributes>, UserSubscriptionAttributes {
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface UserSubscriptionModel extends ModelStatic<UserSubscriptionInstance> {
+  associate: (models: { [key: string]: ModelStatic<Model> }) => void;
+}
+
+const UserSubscriptionModel = (sequelize: Sequelize): UserSubscriptionModel => {
+  const UserSubscription = sequelize.define<UserSubscriptionInstance>(
     "userSubscription",
     {
       id: {
@@ -66,10 +66,7 @@ const UserSubscriptionModel = (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true,
         validate: {
-          /**
-           * @param {Date} value
-           */
-          isAfterActivation(value) {
+          isAfterActivation(value: Date) {
             if (value && this.activatedAt && value <= this.activatedAt) {
               throw new Error(
                 "Cancel request date must be after activation date"
@@ -107,19 +104,13 @@ const UserSubscriptionModel = (sequelize) => {
         },
       ],
       hooks: {
-        beforeUpdate: async (userSubscription) => {
+        beforeUpdate: async (userSubscription: UserSubscriptionInstance) => {
           if (
-            // @ts-ignore
             userSubscription.changed("cancelRequestedAt") &&
-            userSubscription.getDataValue("cancelRequestedAt")
+            userSubscription.cancelRequestedAt
           ) {
-            const activationDate = new Date(
-              userSubscription.getDataValue("activatedAt")
-            );
-            const cancelRequestDate = new Date(
-              // @ts-ignore
-              userSubscription.getDataValue("cancelRequestedAt")
-            );
+            const activationDate = new Date(userSubscription.activatedAt);
+            const cancelRequestDate = new Date(userSubscription.cancelRequestedAt);
 
             // Set the effective cancel date to the last day of the next month
             const effectiveDate = new Date(
@@ -145,19 +136,15 @@ const UserSubscriptionModel = (sequelize) => {
         },
       },
     }
-  );
+  ) as UserSubscriptionModel;
 
-  UserSubscription.associate =
-    /**
-     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
-     */
-    (models) => {
-      UserSubscription.belongsTo(models.User, { foreignKey: "userId" });
-      UserSubscription.belongsTo(models.Plan, {
-        foreignKey: "stripePriceId",
-        targetKey: "stripePriceId",
-      });
-    };
+  UserSubscription.associate = (models: { [key: string]: ModelStatic<Model> }) => {
+    UserSubscription.belongsTo(models.User, { foreignKey: "userId" });
+    UserSubscription.belongsTo(models.Plan, {
+      foreignKey: "stripePriceId",
+      targetKey: "stripePriceId",
+    });
+  };
 
   return UserSubscription;
 };

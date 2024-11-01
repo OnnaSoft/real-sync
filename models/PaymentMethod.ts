@@ -1,31 +1,33 @@
-import { DataTypes } from "sequelize";
-import { Model, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-/**
- * @typedef {Object} PaymentMethodAttributes
- * @property {number} id
- * @property {number} userId
- * @property {'credit' | 'debit'} type
- * @property {string} last4
- * @property {string} expMonth
- * @property {string} expYear
- * @property {string} brand
- * @property {boolean} isDefault
- * @property {string} stripePaymentMethodId
- */
+interface PaymentMethodAttributes {
+  id: number;
+  userId: number;
+  type: 'credit' | 'debit';
+  last4: string;
+  expMonth: string;
+  expYear: string;
+  brand: string | null;
+  isDefault: boolean;
+  stripePaymentMethodId: string;
+}
 
-/**
- * @typedef {import("sequelize").ModelStatic<Model<PaymentMethodAttributes, Omit<PaymentMethodAttributes, 'id'>>>} PaymentMethodModel
- */
+interface PaymentMethodCreationAttributes extends Omit<PaymentMethodAttributes, "id"> {}
 
-/**
- * @param {Sequelize} sequelize
- * @returns {PaymentMethodModel & {associate: (models: any) => void}}
- */
-const PaymentMethodModel = (sequelize) => {
-  /** @type {PaymentMethodModel & { associate: (models: any) => void }} */
-  // @ts-ignore
-  const PaymentMethod = sequelize.define(
+interface PaymentMethodInstance
+  extends Model<PaymentMethodAttributes, PaymentMethodCreationAttributes>,
+    PaymentMethodAttributes {
+  createdAt?: Date;
+  updatedAt?: Date;
+  deletedAt?: Date | null;
+}
+
+interface PaymentMethodModel extends ModelStatic<PaymentMethodInstance> {
+  associate: (models: { [key: string]: ModelStatic<Model> }) => void;
+}
+
+const PaymentMethodModel = (sequelize: Sequelize): PaymentMethodModel => {
+  const PaymentMethod = sequelize.define<PaymentMethodInstance>(
     "paymentMethod",
     {
       id: {
@@ -113,18 +115,14 @@ const PaymentMethodModel = (sequelize) => {
       timestamps: true,
       paranoid: true,
     }
-  );
+  ) as PaymentMethodModel;
 
-  PaymentMethod.associate =
-    /**
-     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
-     */
-    (models) => {
-      PaymentMethod.belongsTo(models.User, {
-        foreignKey: "userId",
-        as: "user",
-      });
-    };
+  PaymentMethod.associate = (models: { [key: string]: ModelStatic<Model> }) => {
+    PaymentMethod.belongsTo(models.User, {
+      foreignKey: "userId",
+      as: "user",
+    });
+  };
 
   return PaymentMethod;
 };

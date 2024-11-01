@@ -1,43 +1,33 @@
-import { DataTypes } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic, Association } from "sequelize";
 import bcrypt from "bcrypt";
-import { Model, Sequelize } from "sequelize";
 
-/**
- * @typedef {Object} UserAttributes
- * @property {number} id
- * @property {string} fullname
- * @property {string} username
- * @property {string} email
- * @property {string} password
- * @property {string | null} [resetToken]
- * @property {Date | null} [resetTokenExpiry]
- * @property {string | null} [stripeCustomerId]
- * @property {boolean} isActive
- * @property {Date} lastLoginAt
- */
+interface UserAttributes {
+  id: number;
+  fullname: string;
+  username: string;
+  email: string;
+  password: string;
+  resetToken: string | null;
+  resetTokenExpiry: Date | null;
+  stripeCustomerId: string | null;
+  isActive: boolean;
+  lastLoginAt: Date;
+}
 
-/**
- * @typedef {import("sequelize").ModelStatic<Model<
- *  UserAttributes, Omit<UserAttributes, 'id' | 'resetToken' | 'resetTokenExpiry' | 'lastLoginAt'>
- * >>} UserModel
- */
+interface UserCreationAttributes extends Omit<UserAttributes, "id" | "resetToken" | "resetTokenExpiry" | "lastLoginAt"> {}
 
-/**
- * @param {Sequelize} sequelize
- * @returns {UserModel & {
- *   associate: (models: {[key: string]: import('sequelize').ModelStatic<import('sequelize').Model>}) => void,
- *   comparePassword: (candidatePassword: string) => Promise<boolean>
- * }}
- */
-const UserModel = (sequelize) => {
-  /**
-   * @type {UserModel & {
-   *   associate: (models: {[key: string]: import('sequelize').ModelStatic<import('sequelize').Model>}) => void,
-   *   comparePassword: (candidatePassword: string) => Promise<boolean>
-   * }}
-   */
-  // @ts-ignore
-  const User = sequelize.define(
+interface UserInstance extends Model<UserAttributes, UserCreationAttributes>, UserAttributes {
+  createdAt?: Date;
+  updatedAt?: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
+}
+
+interface UserModel extends ModelStatic<UserInstance> {
+  associate: (models: { [key: string]: ModelStatic<Model> }) => void;
+}
+
+const UserModel = (sequelize: Sequelize): UserModel => {
+  const User = sequelize.define<UserInstance>(
     "user",
     {
       id: {
@@ -124,27 +114,20 @@ const UserModel = (sequelize) => {
     },
     {
       hooks: {
-        beforeCreate: async (user) => {
-          if (user.getDataValue("password")) {
+        beforeCreate: async (user: UserInstance) => {
+          if (user.password) {
             const salt = await bcrypt.genSalt(
               parseInt(process.env.BCRYPT_SALT_ROUNDS || "10")
             );
-            user.setDataValue(
-              "password",
-              await bcrypt.hash(user.getDataValue("password"), salt)
-            );
+            user.password = await bcrypt.hash(user.password, salt);
           }
         },
-        beforeUpdate: async (user) => {
-          // @ts-ignore
-          if (user.changed("password")) {
+        beforeUpdate: async (user: UserInstance) => {
+          if (user.changed("password") && user.password) {
             const salt = await bcrypt.genSalt(
               parseInt(process.env.BCRYPT_SALT_ROUNDS || "10")
             );
-            user.setDataValue(
-              "password",
-              await bcrypt.hash(user.getDataValue("password"), salt)
-            );
+            user.password = await bcrypt.hash(user.password, salt);
           }
         },
       },
@@ -157,17 +140,13 @@ const UserModel = (sequelize) => {
         },
       },
     }
-  );
+  ) as UserModel;
 
-  User.associate =
-    /**
-     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
-     */
-    (models) => {
-      User.hasMany(models.UserSubscription, { foreignKey: "userId" });
-      User.hasMany(models.PaymentMethod, { foreignKey: "userId" });
-      User.hasMany(models.App, { foreignKey: "userId" });
-    };
+  User.associate = (models: { [key: string]: ModelStatic<Model> }) => {
+    User.hasMany(models.UserSubscription, { foreignKey: "userId" });
+    User.hasMany(models.PaymentMethod, { foreignKey: "userId" });
+    User.hasMany(models.App, { foreignKey: "userId" });
+  };
 
   return User;
 };

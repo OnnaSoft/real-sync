@@ -8,6 +8,7 @@ import { Label } from "../components/ui/label";
 import { Checkbox } from "../components/ui/checkbox";
 import { AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { HttpErrors } from "../models/errors";
 
 type RegisterData = {
   fullname: string;
@@ -23,6 +24,7 @@ type FormErrors = {
   password?: string;
   confirmPassword?: string;
   acceptTerms?: string;
+  [key: string]: string | undefined;
 };
 
 export default function RegisterPage() {
@@ -39,8 +41,17 @@ export default function RegisterPage() {
         },
       }).then((res) => {
         if (!res.ok) {
-          return res.json().then((data) => {
-            throw new Error(data.message || "Registration failed");
+          return res.json().then((data: HttpErrors) => {
+            if (data.errors) {
+              const errors: FormErrors = {};
+              for (const error of Object.entries(data.errors)) {
+                const key = error[0];
+                errors[key] = error[1]?.message;
+              }
+              setFormErrors(errors);
+            }
+
+            throw new Error(data.message || data.errors.server?.message || "Registration failed");
           });
         }
         return res.json();
