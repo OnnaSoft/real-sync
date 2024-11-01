@@ -6,7 +6,7 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import publicData from "@/public";
+import publicData from "../../public";
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
