@@ -1,5 +1,5 @@
 import { HttpError } from "http-errors-enhanced";
-import { DataTypes, Model, Sequelize, ModelStatic, Association } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
 interface AppAttributes {
   id: number;

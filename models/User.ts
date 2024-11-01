@@ -1,4 +1,4 @@
-import { DataTypes, Model, Sequelize, ModelStatic, Association } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 import bcrypt from "bcrypt";
 
 interface UserAttributes {
