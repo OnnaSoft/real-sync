@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "@remix-run/react";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 
 export default function TermsAndConditionsPage() {
   return (

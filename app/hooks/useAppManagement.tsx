@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "./use-toast";
-import { ToastAction } from "../components/ui/toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Link } from "react-router-dom";
-import { App, DedicatedServerPlan } from "../models/app";
+import { App, DedicatedServerPlan } from "@/models/app";
 
 const handleResponse = async (response: Response) => {
   if (!response.ok) {

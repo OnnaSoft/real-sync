@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "./ui/dialog";
 import { Trash2, Key } from "lucide-react";
-import { App } from "../models/app";
+import { App } from "@/models/app";
 
 function ApiKeysModal({
   app,

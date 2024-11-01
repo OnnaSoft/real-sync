@@ -1,13 +1,13 @@
 import React from "react";
 import { useState } from "react";
-import { Button } from "../components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,12 +15,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table";
-import { Badge } from "../components/ui/badge";
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useAppSelector } from "../store/hooks";
-import useFetch from "../hooks/useFetch";
+import { useAppSelector } from "@/store/hooks";
+import useFetch from "@/hooks/useFetch";
 
 interface BillingHistory {
   id: string;

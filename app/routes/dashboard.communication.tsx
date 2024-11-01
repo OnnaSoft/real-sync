@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,16 +17,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../components/ui/table";
-import { Checkbox } from "../components/ui/checkbox";
-import { Label } from "../components/ui/label";
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
+} from "@/components/ui/select";
 import {
   Pencil,
   Trash2,
@@ -35,10 +35,10 @@ import {
   MessageSquare,
   Server,
 } from "lucide-react";
-import { useAppSelector } from "../store/hooks";
+import { useAppSelector } from "@/store/hooks";
 import { App } from "~/models/app";
-import ApiKeysModal from "../components/ApiKeysModal";
-import { useAppManagement } from "../hooks/useAppManagement";
+import ApiKeysModal from "@/components/ApiKeysModal";
+import { useAppManagement } from "@/hooks/useAppManagement";
 
 export default function Communication() {
   const token = useAppSelector((state) => state.auth.token);

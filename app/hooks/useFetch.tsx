@@ -1,6 +1,6 @@
 import { useNavigate } from "@remix-run/react";
-import { logout } from "../store/slices/authSlice";
-import { useAppDispatch } from "../store/hooks";
+import { logout } from "@/store/slices/authSlice";
+import { useAppDispatch } from "@/store/hooks";
 
 class UnauthorizedError extends Error {
   constructor() {

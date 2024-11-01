@@ -1,24 +1,24 @@
 import { useState } from "react";
 import { CreditCard, Plus, Trash2 } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Label } from "../components/ui/label";
-import { toast } from "../hooks/use-toast";
-import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
+} from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAppSelector } from "../store/hooks";
+import { useAppSelector } from "@/store/hooks";
 import {
   StripeProvider,
   CardElement,
   useStripe,
   useElements,
-} from "../components/stripe";
+} from "@/components/stripe";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,8 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "../components/ui/alert-dialog";
-import useFetch from "../hooks/useFetch";
+} from "@/components/ui/alert-dialog";
+import useFetch from "@/hooks/useFetch";
 
 interface PaymentMethod {
   id: string;

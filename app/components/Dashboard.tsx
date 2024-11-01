@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { useAppSelector } from "../store/hooks";
+import { useAppSelector } from "@/store/hooks";
 
 const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
   const auth = useAppSelector((state) => state.auth);
@@ -55,12 +55,12 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
           </Button>
         </div>
         <nav>
-          <Link to="/dashboard/communication" className="block mb-2">
+          {/*<Link to="/dashboard/communication" className="block mb-2">
             <Button variant="ghost" className="w-full justify-start">
               <Headphones className="mr-2 h-4 w-4" />
               Communication
             </Button>
-          </Link>
+          </Link>*/}
           <Link to="/dashboard/tunnels" className="block mb-2">
             <Button variant="ghost" className="w-full justify-start">
               <Server className="mr-2 h-4 w-4" />

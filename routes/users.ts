@@ -91,7 +91,11 @@ router.get(
 
       let hasPaymentMethod = false;
       if (user.stripeCustomerId) {
-        const customer = await stripe.customers.retrieve(user.stripeCustomerId);
+        const customer = await stripe.customers.retrieve(user.stripeCustomerId)
+          .catch((error) => {
+            console.error("Failed to retrieve customer from Stripe", error);
+            throw new HttpError(500, "Failed to retrieve customer from Stripe");
+          });
         if (!customer.deleted) {
           hasPaymentMethod = customer.invoice_settings.default_payment_method !== null;
         }
@@ -100,7 +104,7 @@ router.get(
       const response: ProfileResponse = {
         message: "User profile retrieved successfully",
         user: user,
-        currentPlan: userSubscription.toJSON() as UserSubscriptionWithPlan,
+        currentPlan: userSubscription.toJSON(),
         hasPaymentMethod: hasPaymentMethod,
       };
 

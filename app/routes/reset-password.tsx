@@ -3,11 +3,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Form, Link } from "@remix-run/react";
 import { useMutation } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 type ResetPasswordData = {
   token: string;

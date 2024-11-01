@@ -1,11 +1,11 @@
 import React from "react";
 import { Form, useActionData } from "@remix-run/react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Textarea } from "../components/ui/textarea";
-import { Label } from "../components/ui/label";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { AlertCircle, Briefcase, Users, Zap } from "lucide-react";
 import type { ActionFunction } from "@remix-run/node";
 

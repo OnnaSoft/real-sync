@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import { Form, Link, useNavigate } from "@remix-run/react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Checkbox } from "../components/ui/checkbox";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { HttpErrors } from "../models/errors";
+import { HttpErrors } from "@/models/errors";
 
 type RegisterData = {
   fullname: string;

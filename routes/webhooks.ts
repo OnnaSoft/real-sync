@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import Stripe from "stripe";
-import { User, Plan, sequelize, StripeEvent, UserSubscription } from "../db";
+import { Plan, sequelize, StripeEvent, UserSubscription } from "../db";
 import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 import { Transaction } from "sequelize";

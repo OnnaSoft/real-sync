@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { Form, Link, useNavigate } from "@remix-run/react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { useAppDispatch } from "../store/hooks";
-import { login } from "../store/slices/authSlice";
-import { User } from "../models/user";
+import { useAppDispatch } from "@/store/hooks";
+import { login } from "@/store/slices/authSlice";
+import { User } from "@/models/user";
 
 type LoginData = {
   username: string;

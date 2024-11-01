@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { PricingCard } from "./PricingCard";
-import store from "../store";
-import { logout } from "../store/slices/authSlice";
+import store from "@/store";
+import { logout } from "@/store/slices/authSlice";
 
 interface Plan {
   id: number;

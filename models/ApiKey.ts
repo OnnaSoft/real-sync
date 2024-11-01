@@ -1,26 +1,25 @@
-import { DataTypes } from "sequelize";
-import { Model, Sequelize } from "sequelize";
+import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
-/**
- * @typedef {Object} ApiKeyAttributes
- * @property {number} id
- * @property {string} key
- * @property {Date} lastUsed
- * @property {number} appId
- */
+interface ApiKeyAttributes {
+  id: number;
+  key: string;
+  lastUsed: Date | null;
+  appId: number;
+}
 
-/**
- * @typedef {import("sequelize").ModelStatic<Model<ApiKeyAttributes, Omit<ApiKeyAttributes, 'id'>>>} ApiKeyModel
- */
+interface ApiKeyCreationAttributes extends Omit<ApiKeyAttributes, "id"> {}
 
-/**
- * @param {Sequelize} sequelize
- * @returns {ApiKeyModel & {associate: (models: any) => void}}
- */
-const ApiKeyModel = (sequelize) => {
-  /** @type {ApiKeyModel & { associate: (models: any) => void }} */
-  // @ts-ignore
-  const ApiKey = sequelize.define(
+interface ApiKeyInstance extends Model<ApiKeyAttributes, ApiKeyCreationAttributes>, ApiKeyAttributes {
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+interface ApiKeyModel extends ModelStatic<ApiKeyInstance> {
+  associate: (models: { [key: string]: ModelStatic<Model> }) => void;
+}
+
+const ApiKeyModel = (sequelize: Sequelize): ApiKeyModel => {
+  const ApiKey = sequelize.define<ApiKeyInstance>(
     "apiKey",
     {
       id: {
@@ -52,15 +51,11 @@ const ApiKeyModel = (sequelize) => {
     {
       timestamps: true,
     }
-  );
+  ) as ApiKeyModel;
 
-  ApiKey.associate =
-    /**
-     * @param {{ [x:string]: import("sequelize").ModelStatic<Model> }} models
-     */
-    (models) => {
-      ApiKey.belongsTo(models.App, { foreignKey: "appId" });
-    };
+  ApiKey.associate = (models: { [key: string]: ModelStatic<Model> }) => {
+    ApiKey.belongsTo(models.App, { foreignKey: "appId" });
+  };
 
   return ApiKey;
 };

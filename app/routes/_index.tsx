@@ -11,9 +11,9 @@ import {
   Globe,
   LinkIcon,
 } from "lucide-react";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
-import Plans from "../components/Plans";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
+import Plans from "@/components/Plans";
 
 export default function IndexPage() {
   return (

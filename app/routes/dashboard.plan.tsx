@@ -1,13 +1,13 @@
 import { Fragment, useState } from "react";
-import { Button } from "../components/ui/button";
-import { useToast } from "../hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -15,14 +15,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
+} from "@/components/ui/dialog";
 import { ArrowRight, Check, CreditCard, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAppSelector } from "../store/hooks";
-import useFetch from "../hooks/useFetch";
+import { useAppSelector } from "@/store/hooks";
+import useFetch from "@/hooks/useFetch";
 import { Link } from "@remix-run/react";
-import { Plan } from "../models/plan";
-import { Profile } from "../models/profile";
+import { Plan } from "@/models/plan";
+import { Profile } from "@/models/profile";
 
 const PlanCard: React.FC<{
   plan: Plan;

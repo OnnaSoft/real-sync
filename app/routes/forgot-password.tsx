@@ -1,10 +1,10 @@
 import React from "react";
 import { Form, useActionData, Link } from "@remix-run/react";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { AlertCircle } from "lucide-react";
 import { ActionFunction } from "@remix-run/node";
 
