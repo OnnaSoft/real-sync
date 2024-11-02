@@ -1,12 +1,12 @@
 import { Sequelize } from "sequelize";
-import UserModel from "./models/User.js";
-import PlanModel, { PlanAttributes } from "./models/Plan.js";
-import PaymentMethodModel from "./models/PaymentMethod.js";
-import AppModel from "./models/App.js";
-import ApiKeyModel from "./models/ApiKey.js";
-import DedicatedServerPlanModel, { DedicatedServerPlanAttributes } from "./models/DedicatedServerPlan.js";
-import StripeEventModel from "./models/StripeEvent.js";
-import UserSubscriptionModel from "./models/UserSubscription.js";
+import UserModel from "./models/User";
+import PlanModel, { PlanAttributes } from "./models/Plan";
+import PaymentMethodModel from "./models/PaymentMethod";
+import AppModel from "./models/App";
+import ApiKeyModel from "./models/ApiKey";
+import DedicatedServerPlanModel, { DedicatedServerPlanAttributes } from "./models/DedicatedServerPlan";
+import StripeEventModel from "./models/StripeEvent";
+import UserSubscriptionModel from "./models/UserSubscription";
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -59,7 +59,6 @@ export const ApiKey = ApiKeyModel(sequelize);
 export const StripeEvent = StripeEventModel(sequelize);
 
 // Define associations
-/** @type {{ [x:string]: import("sequelize").ModelStatic<import("sequelize").Model> & { associate: (models: any) => void } }} */
 const models = {
   User,
   Plan,

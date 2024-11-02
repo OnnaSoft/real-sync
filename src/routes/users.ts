@@ -92,7 +92,7 @@ router.get(
       let hasPaymentMethod = false;
       if (user.stripeCustomerId) {
         const customer = await stripe.customers.retrieve(user.stripeCustomerId)
-          .catch((error) => {
+          .catch((error: Error) => {
             console.error("Failed to retrieve customer from Stripe", error);
             throw new HttpError(500, "Failed to retrieve customer from Stripe");
           });

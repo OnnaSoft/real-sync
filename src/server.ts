@@ -1,6 +1,6 @@
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";
-import "./init";
+import "./init.ts";
 import "./db";
 import api from "./routes";
 
@@ -36,7 +36,7 @@ app.use(
 const build = viteDevServer
   ? async () => await viteDevServer.ssrLoadModule("virtual:remix/server-build")
   : // @ts-ignore
-    await import("./build/server/index.js");
+    await import("../build/server/index.js");
 
 app.use("/", api);
 
