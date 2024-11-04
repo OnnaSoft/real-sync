@@ -25,9 +25,9 @@ export function PricingCard({
         </div>
       )}
       <h3 className="text-xl font-bold mb-3 text-center">{title}</h3>
-      <p className="text-3xl font-bold text-center mb-4">
-        {price}
-        <span className="text-lg text-gray-500">/month</span>
+      <p className="text-lg font-bold text-center mb-4">
+        {price + ' '}
+        <span className="text-sm text-gray-500">/ month</span>
       </p>
       <ul className="space-y-2 mb-4 text-sm">
         {features.map((feature, index) => (

@@ -5,6 +5,7 @@ import plansRouter from "./plans";
 import usersRouter from "./users";
 import paymentMethodRouter from "./payment-methods";
 import webhookRouter from "./webhooks";
+import billingRouter from "./billing";
 import { ErrorResBody } from "../types/http";
 
 const api = express.Router();
@@ -16,6 +17,7 @@ api.use(express.urlencoded({ extended: true }));
 api.use("/auth", authRouter);
 api.use("/plans", plansRouter);
 api.use("/users", usersRouter);
+api.use("/billing", billingRouter);
 api.use("/payment-methods", paymentMethodRouter);
 
 api.use(

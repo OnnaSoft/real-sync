@@ -14,7 +14,6 @@ export interface RequestWithUser extends Request {
     email: string;
     fullname: string;
     stripeCustomerId: string | null;
-    userSubscriptions: any[];
   };
 }
 
@@ -59,7 +58,6 @@ const validateSessionToken = (req: RequestWithUser, res: Response, next: NextFun
         email: user.getDataValue('email'),
         fullname: user.getDataValue('fullname'),
         stripeCustomerId: user.getDataValue('stripeCustomerId'),
-        userSubscriptions: [],
       };
       next();
     } catch (error) {

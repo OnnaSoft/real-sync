@@ -68,8 +68,9 @@ async function ensureDefaultPlans() {
     {
       code: "FREE",
       name: "Free",
+      basePrice: 0,
       freeDataTransferGB: 10,
-      pricePerAdditional10GB: 1,
+      pricePerAdditional10GB: 12,
       billingPeriod: "monthly",
       supportLevel: "community",
       apiIntegration: true,
@@ -79,8 +80,9 @@ async function ensureDefaultPlans() {
     {
       code: "PRO",
       name: "Pro",
-      freeDataTransferGB: 100,
-      pricePerAdditional10GB: 0.8,
+      basePrice: 50,
+      freeDataTransferGB: 50,
+      pricePerAdditional10GB: 10,
       billingPeriod: "monthly",
       supportLevel: "email",
       apiIntegration: true,
@@ -90,8 +92,9 @@ async function ensureDefaultPlans() {
     {
       code: "BUSINESS",
       name: "Business",
+      basePrice: 100,
       freeDataTransferGB: 1000,
-      pricePerAdditional10GB: 0.5,
+      pricePerAdditional10GB: 8,
       billingPeriod: "monthly",
       supportLevel: "priority",
       apiIntegration: true,

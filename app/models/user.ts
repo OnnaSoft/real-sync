@@ -22,4 +22,9 @@ export interface CurrentPlan {
   createdAt: string;
   updatedAt: string;
   plan: Plan;
+  currentUsage: {
+    dataTransferGB: number;
+    billingPeriodStart: string;
+    billingPeriodEnd: string;
+  };
 }

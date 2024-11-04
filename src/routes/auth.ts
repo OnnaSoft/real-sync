@@ -8,7 +8,7 @@ import crypto from "crypto";
 import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 
-const router = express.Router();
+const authRouter = express.Router();
 
 const requiredEnvVars = [
   "JWT_SECRET",
@@ -59,7 +59,7 @@ interface LoginSuccessResBody {
   token: string;
 }
 
-router.post(
+authRouter.post(
   "/login",
   async (
     req: Request<{}, LoginSuccessResBody, LoginBody, LoginQuery>,
@@ -128,7 +128,7 @@ interface LogoutResBody {
   message: string;
 }
 
-router.get(
+authRouter.get(
   "/logout",
   (req: Request, res: Response<LogoutResBody>) => {
     // Here you would typically destroy the session or invalidate the JWT token
@@ -149,7 +149,7 @@ interface RegisterSuccessResBody {
   userId: number;
 }
 
-router.post(
+authRouter.post(
   "/register",
   async (
     req: Request<{}, RegisterSuccessResBody, RegisterBody>,
@@ -247,7 +247,7 @@ interface ForgotPasswordSuccessResBody {
   message: string;
 }
 
-router.post(
+authRouter.post(
   "/forgot-password",
   async (
     req: Request<{}, ForgotPasswordSuccessResBody, ForgotPasswordBody>,
@@ -341,7 +341,7 @@ interface ResetPasswordSuccessResBody {
   message: string;
 }
 
-router.post(
+authRouter.post(
   "/reset-password",
   async (
     req: Request<{}, ResetPasswordSuccessResBody, ResetPasswordBody>,
@@ -379,4 +379,4 @@ router.post(
   }
 );
 
-export default router;
+export default authRouter;

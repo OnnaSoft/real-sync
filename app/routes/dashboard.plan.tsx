@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowRight, Check, CreditCard, X } from "lucide-react";
+import { ArrowRight, Check, CreditCard } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
 import useFetch from "@/hooks/useFetch";
@@ -36,68 +36,32 @@ const PlanCard: React.FC<{
       <CardHeader>
         <CardTitle>{plan.name}</CardTitle>
         <CardDescription>
-          ${plan.price} / {plan.billingPeriod}
+          <span className="text-lg font-bold">${plan.basePrice.toFixed(2)}</span>
+          <span className="text-sm text-gray-500">/month</span>
         </CardDescription>
       </CardHeader>
       <CardContent>
         <ul className="space-y-2">
           <li className="flex items-center">
-            {plan.realTimeChat ? (
-              <Check className="text-green-500 mr-2" />
-            ) : (
-              <X className="text-red-500 mr-2" />
-            )}
-            Real-time chat
-          </li>
-          <li className="flex items-center">
-            {plan.voiceCalls ? (
-              <Check className="text-green-500 mr-2" />
-            ) : (
-              <X className="text-red-500 mr-2" />
-            )}
-            Voice calls
-          </li>
-          <li className="flex items-center">
-            {plan.videoCalls ? (
-              <Check className="text-green-500 mr-2" />
-            ) : (
-              <X className="text-red-500 mr-2" />
-            )}
-            Video calls
+            <Check className="text-green-500 mr-2" />
+            {plan.freeDataTransferGB} GB free data transfer
           </li>
           <li className="flex items-center">
             <Check className="text-green-500 mr-2" />
-            {plan.maxApps === 0 ? "Unlimited" : plan.maxApps} app
-            {plan.maxApps !== 1 ? "s" : ""}
-          </li>
-          <li className="flex items-center">
-            <Check className="text-green-500 mr-2" />
-            {plan.secureConnections === 0
-              ? "Unlimited"
-              : plan.secureConnections}
-            secure connection{plan.secureConnections !== 1 ? "s" : ""}
+            ${plan.pricePerAdditional10GB.toFixed(2)} per additional 10GB
           </li>
           <li className="flex items-center">
             <Check className="text-green-500 mr-2" />
             {plan.supportLevel.charAt(0).toUpperCase() +
-              plan.supportLevel.slice(1)}
-            support
+              plan.supportLevel.slice(1)} support
           </li>
           <li className="flex items-center">
-            {plan.apiIntegration ? (
-              <Check className="text-green-500 mr-2" />
-            ) : (
-              <X className="text-red-500 mr-2" />
-            )}
-            API integration
+            <Check className="text-green-500 mr-2" />
+            {plan.apiIntegration ? "API integration" : "No API integration"}
           </li>
           <li className="flex items-center">
-            {plan.dedicatedAccountManager ? (
-              <Check className="text-green-500 mr-2" />
-            ) : (
-              <X className="text-red-500 mr-2" />
-            )}
-            Dedicated account manager
+            <Check className="text-green-500 mr-2" />
+            {plan.dedicatedAccountManager ? "Dedicated account manager" : "No dedicated account manager"}
           </li>
         </ul>
         {userProfile?.hasPaymentMethod && (
@@ -225,6 +189,14 @@ export default function ActivePlan() {
     (plan) => plan.id === selectedPlanId
   );
 
+  if (!userProfile) {
+    return <div>No user profile found. Please try again later.</div>;
+  }
+
+  if (!plans || plans.length === 0) {
+    return <div>No plans available. Please try again later.</div>;
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Active Plan</h2>
@@ -241,12 +213,17 @@ export default function ActivePlan() {
                 <strong>Plan:</strong> {currentPlan.plan.name}
               </p>
               <p>
-                <strong>Price:</strong> ${currentPlan.plan.price} /
-                {currentPlan.plan.billingPeriod}
+                <strong>Base Price:</strong> ${currentPlan.plan.basePrice.toFixed(2)}/month
               </p>
               <p>
-                <strong>Activated:</strong>
-                {new Date(currentPlan.activatedAt).toLocaleDateString()}
+                <strong>Free Data Transfer:</strong> {currentPlan.plan.freeDataTransferGB} GB
+              </p>
+              <p>
+                <strong>Price per Additional 10GB:</strong> ${currentPlan.plan.pricePerAdditional10GB.toFixed(2)}
+              </p>
+              <p>
+                <strong>Activated:</strong>{" "}
+                {new Date(currentPlan.activatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
             </div>
           ) : (

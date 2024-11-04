@@ -7,7 +7,7 @@ import { HttpError } from "http-errors-enhanced";
 import { Transaction } from "sequelize";
 import { RequestWithSession } from "../types/http";
 
-const router = express.Router();
+const paymentMethodRouter = express.Router();
 
 interface ErrorsMap {
   [key: string]: { message: string };
@@ -99,7 +99,7 @@ const validatePaymentMethod = [
     .withMessage("Stripe payment method ID is required"),
 ];
 
-router.get(
+paymentMethodRouter.get(
   "/",
   validateSessionToken,
   async (req: RequestWithSession, res: Response<GetPaymentMethodsSuccessResBody>, next: NextFunction) => {
@@ -124,7 +124,7 @@ router.get(
   }
 );
 
-router.post(
+paymentMethodRouter.post(
   "/",
   validateSessionToken,
   validatePaymentMethod,
@@ -222,7 +222,7 @@ router.post(
   }
 );
 
-router.put(
+paymentMethodRouter.put(
   "/:id",
   validateSessionToken,
   validatePaymentMethod,
@@ -275,7 +275,7 @@ router.put(
   }
 );
 
-router.delete(
+paymentMethodRouter.delete(
   "/:id",
   validateSessionToken,
   async (req: RequestWithSession<DeletePaymentMethodParams, DeletePaymentMethodSuccessResBody>, res: Response<DeletePaymentMethodSuccessResBody>, next: NextFunction) => {
@@ -304,7 +304,14 @@ router.delete(
         });
       }
 
-      await stripe.paymentMethods.detach(paymentMethod.getDataValue("stripePaymentMethodId"));
+      await stripe.paymentMethods.detach(paymentMethod.getDataValue("stripePaymentMethodId"))
+        .catch(() => {
+          throw new HttpError(400, "Failed to delete payment method", {
+            errors: {
+              id: { message: "Failed to delete payment method" },
+            },
+          });
+        });
 
       await paymentMethod.destroy();
 
@@ -315,7 +322,7 @@ router.delete(
   }
 );
 
-router.post(
+paymentMethodRouter.post(
   "/:id/set-default",
   validateSessionToken,
   async (
@@ -382,9 +389,10 @@ router.post(
       res.status(200).json({ message: "Payment method set as default successfully" });
     } catch (error) {
       if (transaction) await transaction.rollback();
+      console.trace(error);
       next(error);
     }
   }
 );
 
-export default router;
+export default paymentMethodRouter;

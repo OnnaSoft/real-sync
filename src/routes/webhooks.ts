@@ -5,7 +5,7 @@ import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 import { Transaction } from "sequelize";
 
-const router = express.Router();
+const webhookRouter = express.Router();
 
 const requiredEnvVars = ["STRIPE_WEBHOOK_SECRET"];
 const missingEnvVars = requiredEnvVars.filter(
@@ -21,7 +21,7 @@ if (missingEnvVars.length > 0) {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 
-router.post(
+webhookRouter.post(
   "/",
   express.raw({ type: "application/json" }),
   async (req: Request, res: Response<{ received: boolean }>, next: NextFunction) => {
@@ -266,4 +266,4 @@ async function registerEvent(transaction: Transaction, event: Stripe.Event) {
   );
 }
 
-export default router;
+export default webhookRouter;

@@ -1,4 +1,3 @@
-import React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,9 +17,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Download } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { useAppSelector } from "@/store/hooks";
-import useFetch from "@/hooks/useFetch";
 
 interface BillingHistory {
   id: string;
@@ -66,58 +62,11 @@ const fakeBillingHistory: BillingHistory[] = [
     amount: 19.99,
     status: "paid",
     invoice: "INV-001",
-  },
-  {
-    id: "2",
-    date: "2023-04-01",
-    amount: 19.99,
-    status: "paid",
-    invoice: "INV-002",
-  },
-  {
-    id: "3",
-    date: "2023-03-01",
-    amount: 19.99,
-    status: "paid",
-    invoice: "INV-003",
-  },
-  {
-    id: "4",
-    date: "2023-02-01",
-    amount: 19.99,
-    status: "paid",
-    invoice: "INV-004",
-  },
-  {
-    id: "5",
-    date: "2023-01-01",
-    amount: 19.99,
-    status: "paid",
-    invoice: "INV-005",
-  },
+  }
 ];
 
 export default function Billing() {
   const [billingHistory] = useState<BillingHistory[]>(fakeBillingHistory);
-  const token = useAppSelector((state) => state.auth.token);
-  const fetch = useFetch();
-
-  const {
-    data: userProfile,
-    isLoading,
-    error,
-  } = useQuery<UserProfile>({
-    queryKey: ["userProfile"],
-    queryFn: async () => {
-      const response = await fetch("/users/profile", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch user profile");
-      }
-      return response.json();
-    },
-  });
 
   const getStatusBadge = (status: BillingHistory["status"]) => {
     switch (status) {
@@ -132,64 +81,9 @@ export default function Billing() {
     }
   };
 
-  if (isLoading) {
-    return <div>Loading billing information...</div>;
-  }
-
-  if (error) {
-    return <div>Error loading billing information. Please try again.</div>;
-  }
-
-  const currentPlan = userProfile?.currentPlan;
-
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Billing</h2>
-
-      <Card className="bg-white">
-        <CardHeader>
-          <CardTitle>Current Plan</CardTitle>
-          <CardDescription>
-            Your current plan and billing details
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {currentPlan ? (
-            <div className="space-y-2">
-              <p>
-                <strong>Plan:</strong> {currentPlan.plan.name}
-              </p>
-              <p>
-                <strong>Price:</strong> ${currentPlan.plan.price} /{" "}
-                {currentPlan.plan.billingPeriod}
-              </p>
-              <p>
-                <strong>Status:</strong> {currentPlan.status}
-              </p>
-              <p>
-                <strong>Activated:</strong>{" "}
-                {new Date(currentPlan.activatedAt).toLocaleDateString()}
-              </p>
-              {currentPlan.cancelRequestedAt && (
-                <p>
-                  <strong>Cancellation Requested:</strong>{" "}
-                  {new Date(currentPlan.cancelRequestedAt).toLocaleDateString()}
-                </p>
-              )}
-              {currentPlan.effectiveCancelDate && (
-                <p>
-                  <strong>Effective Cancel Date:</strong>{" "}
-                  {new Date(
-                    currentPlan.effectiveCancelDate
-                  ).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          ) : (
-            <p>No active plan. Please select a plan to get started.</p>
-          )}
-        </CardContent>
-      </Card>
 
       <Card className="bg-white">
         <CardHeader>

@@ -7,6 +7,7 @@ interface Plan {
   id: number;
   name: string;
   code: string;
+  basePrice: number;
   freeDataTransferGB: number;
   pricePerAdditional10GB: number;
   billingPeriod: string;
@@ -35,6 +36,7 @@ const fetchPlans = async (): Promise<PlansResponse> => {
 
 const getFeatures = (plan: Plan): string[] => {
   const features = [];
+  console.log(plan);
   features.push(`${plan.freeDataTransferGB} GB free data transfer`);
   features.push(`$${plan.pricePerAdditional10GB.toFixed(2)} per additional 10GB`);
   features.push(`${plan.supportLevel.charAt(0).toUpperCase() + plan.supportLevel.slice(1)} support`);
@@ -44,10 +46,10 @@ const getFeatures = (plan: Plan): string[] => {
 };
 
 const formatPrice = (plan: Plan): string => {
-  if (plan.freeDataTransferGB === 0 && plan.pricePerAdditional10GB === 0) {
+  if (plan.basePrice === 0 && plan.freeDataTransferGB === 0 && plan.pricePerAdditional10GB === 0) {
     return "Free";
   }
-  return `$${plan.pricePerAdditional10GB.toFixed(2)} / 10GB`;
+  return `$${plan.basePrice.toFixed(2)} + $${plan.pricePerAdditional10GB.toFixed(2)}/10GB`;
 };
 
 export default function Plans() {

@@ -4,6 +4,7 @@ export interface PlanAttributes {
   id: number;
   code: string;
   name: string;
+  basePrice: number;
   freeDataTransferGB: number;
   pricePerAdditional10GB: number;
   billingPeriod: 'monthly' | 'yearly';
@@ -13,7 +14,7 @@ export interface PlanAttributes {
   stripePriceId: string;
 }
 
-export interface PlanCreationAttributes extends Omit<PlanAttributes, "id"> {}
+export interface PlanCreationAttributes extends Omit<PlanAttributes, "id"> { }
 
 interface PlanInstance extends Model<PlanAttributes, PlanCreationAttributes>, PlanAttributes {
   createdAt?: Date;
@@ -57,6 +58,19 @@ const PlanModel = (sequelize: Sequelize): PlanModel => {
           },
         },
       },
+      basePrice: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00,
+        validate: {
+          isDecimal: { msg: "Base price must be a valid decimal number" },
+          min: { args: [0], msg: "Base price must be greater than or equal to 0" },
+        },
+        get() {
+          const value = this.getDataValue('basePrice');
+          return value === null ? null : Number(value);
+        },
+      },
       freeDataTransferGB: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -73,6 +87,10 @@ const PlanModel = (sequelize: Sequelize): PlanModel => {
         validate: {
           isDecimal: { msg: "Price must be a valid decimal number" },
           min: { args: [0], msg: "Price must be greater than or equal to 0" },
+        },
+        get() {
+          const value = this.getDataValue('pricePerAdditional10GB');
+          return value === null ? null : Number(value);
         },
       },
       billingPeriod: {
@@ -116,6 +134,16 @@ const PlanModel = (sequelize: Sequelize): PlanModel => {
     },
     {
       timestamps: true,
+      indexes: [
+        {
+          unique: true,
+          fields: ['code'],
+        },
+        {
+          unique: true,
+          fields: ['stripePriceId'],
+        },
+      ]
     }
   ) as PlanModel;
 

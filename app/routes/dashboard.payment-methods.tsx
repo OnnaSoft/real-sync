@@ -14,7 +14,6 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
 import {
-  StripeProvider,
   CardElement,
   useStripe,
   useElements,
@@ -192,6 +191,8 @@ export default function PaymentMethods() {
         title: "Payment method added",
         description: "Your new payment method has been successfully added.",
       });
+      // Dispatch custom event
+      window.dispatchEvent(new Event('paymentMethodAdded'));
     },
     onError: (error: Error) => {
       console.error("Error adding payment method:", error);

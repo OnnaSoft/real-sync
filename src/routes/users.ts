@@ -1,24 +1,29 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { Response, NextFunction } from "express";
 import validateSessionToken from "../middlewares/validateSessionToken";
 import { UserSubscription, Plan, User } from "../db";
 import { Op } from "sequelize";
 import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 import { RequestWithSession } from "../types/http";
+import addPaymentMethodInfo, { RequestWithUserAndPayment } from "src/middlewares/addPaymentMethodInfo";
 
-const router = express.Router();
+const usersRouter = express.Router();
 
 interface UserAttributes {
   id: number;
   stripeCustomerId: string | null;
   // Add other user properties as needed
 }
-
-interface PlanAttributes {
+export interface PlanAttributes {
   id: number;
-  name: string;
   code: string;
-  price: number;
+  name: string;
+  freeDataTransferGB: number;
+  pricePerAdditional10GB: number;
+  billingPeriod: 'monthly' | 'yearly';
+  supportLevel: 'community' | 'email' | 'priority' | 'dedicated';
+  apiIntegration: boolean;
+  dedicatedAccountManager: boolean;
   stripePriceId: string;
 }
 
@@ -54,14 +59,11 @@ interface AssignPlanResponse {
   userSubscription: UserSubscriptionWithPlan;
 }
 
-interface RequestWithUser extends Request {
-  user?: UserAttributes;
-}
-
-router.get(
+usersRouter.get(
   "/profile",
   validateSessionToken,
-  async (req: RequestWithUser, res: Response<ProfileResponse>, next: NextFunction) => {
+  addPaymentMethodInfo,
+  async (req: RequestWithUserAndPayment, res: Response<ProfileResponse>, next: NextFunction) => {
     const user = req.user;
     if (!user) {
       return next(new HttpError(401, "Unauthorized"));
@@ -78,7 +80,15 @@ router.get(
         include: [
           {
             model: Plan,
-            attributes: ["id", "name", "code", "price", "stripePriceId"],
+            attributes: [
+              "id",
+              "name",
+              "code",
+              "basePrice",
+              "freeDataTransferGB",
+              "pricePerAdditional10GB",
+              "stripePriceId"
+            ],
           },
         ],
       });
@@ -89,33 +99,22 @@ router.get(
         });
       }
 
-      let hasPaymentMethod = false;
-      if (user.stripeCustomerId) {
-        const customer = await stripe.customers.retrieve(user.stripeCustomerId)
-          .catch((error: Error) => {
-            console.error("Failed to retrieve customer from Stripe", error);
-            throw new HttpError(500, "Failed to retrieve customer from Stripe");
-          });
-        if (!customer.deleted) {
-          hasPaymentMethod = customer.invoice_settings.default_payment_method !== null;
-        }
-      }
-
       const response: ProfileResponse = {
         message: "User profile retrieved successfully",
         user: user,
         currentPlan: userSubscription.toJSON(),
-        hasPaymentMethod: hasPaymentMethod,
+        hasPaymentMethod: req.hasPaymentMethod === true,
       };
 
       res.json(response);
     } catch (error) {
+      console.trace(error);
       next(error);
     }
   }
 );
 
-router.post(
+usersRouter.post(
   "/assign-plan",
   validateSessionToken,
   async (req: RequestWithSession<{}, AssignPlanResponse, AssignPlanBody>, res: Response<AssignPlanResponse>, next: NextFunction) => {
@@ -234,4 +233,4 @@ router.post(
   }
 );
 
-export default router;
+export default usersRouter;

@@ -2,13 +2,10 @@ export interface Plan {
   id: number;
   name: string;
   code: string;
-  price: string;
+  basePrice: number;
+  freeDataTransferGB: number;
+  pricePerAdditional10GB: number;
   billingPeriod: string;
-  realTimeChat: boolean;
-  voiceCalls: boolean;
-  videoCalls: boolean;
-  maxApps: number;
-  secureConnections: number;
   supportLevel: string;
   apiIntegration: boolean;
   dedicatedAccountManager: boolean;
