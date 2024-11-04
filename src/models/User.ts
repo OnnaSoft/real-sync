@@ -145,7 +145,6 @@ const UserModel = (sequelize: Sequelize): UserModel => {
   User.associate = (models: { [key: string]: ModelStatic<Model> }) => {
     User.hasMany(models.UserSubscription, { foreignKey: "userId" });
     User.hasMany(models.PaymentMethod, { foreignKey: "userId" });
-    User.hasMany(models.App, { foreignKey: "userId" });
   };
 
   return User;

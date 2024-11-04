@@ -7,13 +7,9 @@ interface Plan {
   id: number;
   name: string;
   code: string;
-  price: string;
+  freeDataTransferGB: number;
+  pricePerAdditional10GB: number;
   billingPeriod: string;
-  realTimeChat: boolean;
-  voiceCalls: boolean;
-  videoCalls: boolean;
-  maxApps: number;
-  secureConnections: number;
   supportLevel: string;
   apiIntegration: boolean;
   dedicatedAccountManager: boolean;
@@ -39,30 +35,24 @@ const fetchPlans = async (): Promise<PlansResponse> => {
 
 const getFeatures = (plan: Plan): string[] => {
   const features = [];
-  if (plan.realTimeChat) features.push("Real-time chat");
-  if (plan.voiceCalls) features.push("Voice calls");
-  if (plan.videoCalls) features.push("Video calls");
-  features.push(
-    `Up to ${plan.maxApps === 0 ? "unlimited" : plan.maxApps} apps`
-  );
-  features.push(
-    `Secure tunnel (${
-      plan.secureConnections === 0 ? "unlimited" : plan.secureConnections
-    } connection${plan.secureConnections !== 1 ? "s" : ""})`
-  );
-  features.push(
-    `${
-      plan.supportLevel.charAt(0).toUpperCase() + plan.supportLevel.slice(1)
-    } support`
-  );
+  features.push(`${plan.freeDataTransferGB} GB free data transfer`);
+  features.push(`$${plan.pricePerAdditional10GB.toFixed(2)} per additional 10GB`);
+  features.push(`${plan.supportLevel.charAt(0).toUpperCase() + plan.supportLevel.slice(1)} support`);
   if (plan.apiIntegration) features.push("API integration");
   if (plan.dedicatedAccountManager) features.push("Dedicated account manager");
   return features;
 };
 
+const formatPrice = (plan: Plan): string => {
+  if (plan.freeDataTransferGB === 0 && plan.pricePerAdditional10GB === 0) {
+    return "Free";
+  }
+  return `$${plan.pricePerAdditional10GB.toFixed(2)} / 10GB`;
+};
+
 export default function Plans() {
   const {
-    data = { message: "", total: 0, data: [] },
+    data: plans = { message: "", total: 0, data: [] },
     isLoading,
     error,
   } = useQuery<PlansResponse, Error>({
@@ -70,7 +60,7 @@ export default function Plans() {
     queryFn: fetchPlans,
   });
 
-  if (isLoading || data.total === 0) {
+  if (isLoading || plans.total === 0) {
     return (
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-5xl mx-auto">
@@ -102,11 +92,11 @@ export default function Plans() {
           Plans and Pricing
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(data?.data || []).map((plan) => (
+          {(plans?.data || []).map((plan) => (
             <PricingCard
               key={plan.id}
               title={plan.name}
-              price={plan.price}
+              price={formatPrice(plan)}
               features={getFeatures(plan)}
               highlighted={plan.code === "PRO"}
             />

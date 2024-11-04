@@ -26,7 +26,7 @@ export function PricingCard({
       )}
       <h3 className="text-xl font-bold mb-3 text-center">{title}</h3>
       <p className="text-3xl font-bold text-center mb-4">
-        ${price}
+        {price}
         <span className="text-lg text-gray-500">/month</span>
       </p>
       <ul className="space-y-2 mb-4 text-sm">

@@ -4,13 +4,9 @@ export interface PlanAttributes {
   id: number;
   code: string;
   name: string;
-  price: number;
+  freeDataTransferGB: number;
+  pricePerAdditional10GB: number;
   billingPeriod: 'monthly' | 'yearly';
-  realTimeChat: boolean;
-  voiceCalls: boolean;
-  videoCalls: boolean;
-  maxApps: number;
-  secureConnections: number;
   supportLevel: 'community' | 'email' | 'priority' | 'dedicated';
   apiIntegration: boolean;
   dedicatedAccountManager: boolean;
@@ -61,9 +57,19 @@ const PlanModel = (sequelize: Sequelize): PlanModel => {
           },
         },
       },
-      price: {
+      freeDataTransferGB: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 10,
+        validate: {
+          isInt: { msg: "Free data transfer must be an integer" },
+          min: { args: [0], msg: "Free data transfer must be at least 0 GB" },
+        },
+      },
+      pricePerAdditional10GB: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
+        defaultValue: 1.00,
         validate: {
           isDecimal: { msg: "Price must be a valid decimal number" },
           min: { args: [0], msg: "Price must be greater than or equal to 0" },
@@ -77,37 +83,6 @@ const PlanModel = (sequelize: Sequelize): PlanModel => {
             args: [["monthly", "yearly"]],
             msg: "Billing period must be either 'monthly' or 'yearly'",
           },
-        },
-      },
-      realTimeChat: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      voiceCalls: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      videoCalls: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
-      maxApps: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        validate: {
-          isInt: { msg: "Max apps must be an integer" },
-          min: { args: [0], msg: "Max apps must be at least 0" },
-        },
-      },
-      secureConnections: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        validate: {
-          isInt: { msg: "Secure connections must be an integer" },
-          min: { args: [0], msg: "Secure connections must be at least 0" },
         },
       },
       supportLevel: {

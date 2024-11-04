@@ -4,8 +4,6 @@ import authRouter from "./auth";
 import plansRouter from "./plans";
 import usersRouter from "./users";
 import paymentMethodRouter from "./payment-methods";
-import appDedicatedServerPlansRouter from "./app-dedicated-server-plans";
-import appsRouter from "./apps";
 import webhookRouter from "./webhooks";
 import { ErrorResBody } from "../types/http";
 
@@ -19,8 +17,6 @@ api.use("/auth", authRouter);
 api.use("/plans", plansRouter);
 api.use("/users", usersRouter);
 api.use("/payment-methods", paymentMethodRouter);
-api.use("/app-dedicated-server-plans", appDedicatedServerPlansRouter);
-api.use("/apps", appsRouter);
 
 api.use(
   (err: Error | HttpError & ErrorResBody, req: express.Request, res: express.Response, next: express.NextFunction) => {

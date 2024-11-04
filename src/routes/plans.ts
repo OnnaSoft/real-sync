@@ -8,13 +8,9 @@ interface PlanData {
   id: number;
   name: string;
   code: string;
-  price: number;
+  freeDataTransferGB: number;
+  pricePerAdditional10GB: number;
   billingPeriod: string;
-  realTimeChat: boolean;
-  voiceCalls: boolean;
-  videoCalls: boolean;
-  maxApps: number;
-  secureConnections: number;
   supportLevel: string;
   apiIntegration: boolean;
   dedicatedAccountManager: boolean;
@@ -38,13 +34,9 @@ router.get(
         id: plan.getDataValue("id"),
         name: plan.getDataValue("name"),
         code: plan.getDataValue("code"),
-        price: plan.getDataValue("price"),
+        freeDataTransferGB: plan.getDataValue("freeDataTransferGB"),
+        pricePerAdditional10GB: Number(plan.getDataValue("pricePerAdditional10GB")),
         billingPeriod: plan.getDataValue("billingPeriod"),
-        realTimeChat: plan.getDataValue("realTimeChat"),
-        voiceCalls: plan.getDataValue("voiceCalls"),
-        videoCalls: plan.getDataValue("videoCalls"),
-        maxApps: plan.getDataValue("maxApps"),
-        secureConnections: plan.getDataValue("secureConnections"),
         supportLevel: plan.getDataValue("supportLevel"),
         apiIntegration: plan.getDataValue("apiIntegration"),
         dedicatedAccountManager: plan.getDataValue("dedicatedAccountManager"),
