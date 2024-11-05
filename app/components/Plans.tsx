@@ -16,27 +16,22 @@ interface Plan {
   dedicatedAccountManager: boolean;
 }
 
-interface PlansResponse {
-  message: string;
-  total: number;
-  data: Plan[];
-}
 
-const fetchPlans = async (): Promise<PlansResponse> => {
+const fetchPlans = async (): Promise<Plan[]> => {
   const response = await fetch("/plans");
   if (response.status === 401) {
     store.dispatch(logout());
-    return { total: 0, message: "Unauthorized", data: [] };
+    return [];
   }
   if (!response.ok) {
     throw new Error("Failed to fetch plans");
   }
-  return response.json();
+  const { data } = await response.json();
+  return data;
 };
 
 const getFeatures = (plan: Plan): string[] => {
   const features = [];
-  console.log(plan);
   features.push(`${plan.freeDataTransferGB} GB free data transfer`);
   features.push(`$${plan.pricePerAdditional10GB.toFixed(2)} per additional 10GB`);
   features.push(`${plan.supportLevel.charAt(0).toUpperCase() + plan.supportLevel.slice(1)} support`);
@@ -54,15 +49,15 @@ const formatPrice = (plan: Plan): string => {
 
 export default function Plans() {
   const {
-    data: plans = { message: "", total: 0, data: [] },
+    data: plans = [],
     isLoading,
     error,
-  } = useQuery<PlansResponse, Error>({
+  } = useQuery<Plan[], Error>({
     queryKey: ["plans"],
     queryFn: fetchPlans,
   });
 
-  if (isLoading || plans.total === 0) {
+  if (isLoading || plans.length === 0) {
     return (
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-5xl mx-auto">
@@ -94,7 +89,7 @@ export default function Plans() {
           Plans and Pricing
         </h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(plans?.data || []).map((plan) => (
+          {(plans || []).map((plan) => (
             <PricingCard
               key={plan.id}
               title={plan.name}

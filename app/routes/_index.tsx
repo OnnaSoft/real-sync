@@ -1,15 +1,15 @@
 import React from "react";
 import { Link } from "@remix-run/react";
 import {
-  MessageSquare,
-  Phone,
-  Video,
   ArrowRight,
   Check,
   Users,
   Briefcase,
   Globe,
   LinkIcon,
+  Shield,
+  Zap,
+  Code,
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
@@ -25,11 +25,10 @@ export default function IndexPage() {
           <div className="max-w-5xl mx-auto">
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-                Real-Time Communication and Simplified Development
+                Simplified Development with Secure Tunnels
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 mb-8">
-                Connect with chat, calls, video calls, and securely expose your
-                local servers.
+                Securely expose your local servers to the Internet for easy testing and demonstrations.
               </p>
               <Link
                 to="/register"
@@ -45,53 +44,53 @@ export default function IndexPage() {
         <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-8">
-              Key Features
+              Key Features of Our Secure Tunnel
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <FeatureCard
-                icon={<MessageSquare className="w-10 h-10 text-blue-600" />}
-                title="Real-time Chat"
-                description="Communicate quickly with instant messages."
-              />
-              <FeatureCard
-                icon={<Phone className="w-10 h-10 text-blue-600" />}
-                title="Voice Calls"
-                description="High-quality calls without interruptions."
-              />
-              <FeatureCard
-                icon={<Video className="w-10 h-10 text-blue-600" />}
-                title="Video Calls"
-                description="Connect face-to-face with stable video calls."
-              />
-              <FeatureCard
                 icon={<LinkIcon className="w-10 h-10 text-blue-600" />}
-                title="Secure Tunnel"
-                description="Securely expose your local servers to the Internet."
+                title="Secure Exposure"
+                description="Safely expose your local servers to the Internet."
+              />
+              <FeatureCard
+                icon={<Globe className="w-10 h-10 text-blue-600" />}
+                title="Global Access"
+                description="Access your local server from anywhere in the world."
+              />
+              <FeatureCard
+                icon={<Check className="w-10 h-10 text-blue-600" />}
+                title="Easy Setup"
+                description="Simple command-line interface for quick tunnel creation."
+              />
+              <FeatureCard
+                icon={<Users className="w-10 h-10 text-blue-600" />}
+                title="Team Collaboration"
+                description="Share your local work with team members effortlessly."
               />
             </div>
           </div>
         </section>
 
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-100">
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-2xl font-bold text-center mb-8">
-              How to Use RealSync
+              How to Use RealSync Tunnel
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <UsageCard
-                icon={<Users className="w-10 h-10 text-blue-600" />}
-                title="Work Teams"
-                description="Create channels for different projects, share files, and coordinate tasks with your team in real-time."
+                icon={<Briefcase className="w-10 h-10 text-blue-600" />}
+                title="Development"
+                description="Expose your local development server for easy testing across devices and networks."
               />
               <UsageCard
-                icon={<Briefcase className="w-10 h-10 text-blue-600" />}
-                title="Business Meetings"
-                description="Organize video calls with clients or partners, share your screen, and take collaborative notes during the meeting."
+                icon={<Users className="w-10 h-10 text-blue-600" />}
+                title="Demonstrations"
+                description="Showcase your work-in-progress to clients or team members without deployment."
               />
               <UsageCard
                 icon={<Globe className="w-10 h-10 text-blue-600" />}
-                title="Development and Testing"
-                description="Use our secure tunnel to expose your local applications, facilitate remote testing, and real-time demonstrations."
+                title="API Testing"
+                description="Test your APIs with external services or webhooks using a public URL."
               />
             </div>
           </div>
@@ -127,7 +126,7 @@ export default function IndexPage() {
                   </li>
                 </ul>
               </div>
-              <div className="bg-gray-100 p-4 rounded-lg">
+              <div className="bg-gray-50 p-4 rounded-lg">
                 <pre className="text-sm">
                   <code>
                     $ realsync-tunnel start 8080
@@ -142,16 +141,49 @@ export default function IndexPage() {
           </div>
         </section>
 
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl font-bold text-center mb-8">
+              Why Choose RealSync Tunnel?
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              <BenefitCard
+                icon={<Shield className="w-12 h-12 text-blue-600" />}
+                title="Enhanced Security"
+                description="Our tunnels use state-of-the-art encryption to ensure your data remains safe and secure."
+              />
+              <BenefitCard
+                icon={<Zap className="w-12 h-12 text-blue-600" />}
+                title="Lightning Fast"
+                description="Experience minimal latency with our optimized network infrastructure."
+              />
+              <BenefitCard
+                icon={<Code className="w-12 h-12 text-blue-600" />}
+                title="Developer Friendly"
+                description="Integrate easily with your existing workflow using our CLI tools and API."
+              />
+            </div>
+            <div className="mt-12 text-center">
+              <Link
+                to="/features"
+                className="inline-flex items-center text-blue-600 hover:text-blue-800 transition duration-300"
+              >
+                Learn more about our features
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </section>
 
         <Plans />
 
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-100">
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-2xl font-bold mb-4 text-gray-900">
-              Ready to revolutionize your communication and development?
+              Ready to revolutionize your development process?
             </h2>
             <p className="text-lg mb-8 text-gray-600">
-              Try our real-time communication service and secure tunnel today.
+              Try our secure tunnel service today and simplify your workflow.
             </p>
             <Link
               to="/register"
@@ -196,6 +228,22 @@ function UsageCard({ icon, title, description }: UsageCardProps) {
     <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition duration-300 transform hover:-translate-y-1">
       <div className="flex justify-center mb-3">{icon}</div>
       <h3 className="text-lg font-semibold mb-2 text-center">{title}</h3>
+      <p className="text-sm text-gray-600 text-center">{description}</p>
+    </div>
+  );
+}
+
+interface BenefitCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+function BenefitCard({ icon, title, description }: BenefitCardProps) {
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300">
+      <div className="flex justify-center mb-4">{icon}</div>
+      <h3 className="text-xl font-semibold mb-2 text-center">{title}</h3>
       <p className="text-sm text-gray-600 text-center">{description}</p>
     </div>
   );

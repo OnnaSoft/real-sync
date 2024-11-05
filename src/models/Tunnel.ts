@@ -2,7 +2,7 @@ import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
 
 export interface TunnelAttributes {
   id: number;
-  subdomain: string;
+  domain: string;
   userId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -28,7 +28,7 @@ const TunnelModel = (sequelize: Sequelize): TunnelModel => {
         autoIncrement: true,
         primaryKey: true,
       },
-      subdomain: {
+      domain: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,

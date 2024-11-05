@@ -100,8 +100,8 @@ export default function ActivePlan() {
       if (!response.ok) {
         throw new Error("Failed to fetch plans");
       }
-      const data = await response.json();
-      return data.data;
+      const {data} = await response.json();
+      return data;
     },
     retry: true,
     retryDelay: 5000,
@@ -185,9 +185,10 @@ export default function ActivePlan() {
   }
 
   const currentPlan = userProfile?.currentPlan;
-  const selectedPlan = (plans ?? [])?.find(
-    (plan) => plan.id === selectedPlanId
-  );
+  let selectedPlan: Plan | undefined;
+  if (selectedPlanId) {
+    selectedPlan = plans?.find((plan) => plan.id === selectedPlanId);
+  }
 
   if (!userProfile) {
     return <div>No user profile found. Please try again later.</div>;
@@ -196,6 +197,8 @@ export default function ActivePlan() {
   if (!plans || plans.length === 0) {
     return <div>No plans available. Please try again later.</div>;
   }
+
+  console.log(typeof plans, plans)
 
   return (
     <div className="space-y-6">
@@ -253,11 +256,11 @@ export default function ActivePlan() {
         </Card>
       )}
 
-      {userProfile?.hasPaymentMethod && (
+      {userProfile?.hasPaymentMethod && Array.isArray(plans) && (
         <Fragment>
           <h3 className="text-xl font-semibold">Available Plans</h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans?.map((plan) => (
+            {plans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 plan={plan}

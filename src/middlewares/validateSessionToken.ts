@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import * as core from "express-serve-static-core";
 import { User } from '../db';
 
 interface JwtPayload {
@@ -7,7 +8,13 @@ interface JwtPayload {
   username: string;
 }
 
-export interface RequestWithUser extends Request {
+export interface RequestWithUser<
+  P = core.ParamsDictionary,
+  ResBody = any,
+  ReqBody = any,
+  ReqQuery = core.Query,
+  Locals extends Record<string, any> = Record<string, any>
+> extends Request<P, ResBody, ReqBody, ReqQuery, Locals> {
   user?: {
     id: number;
     username: string;

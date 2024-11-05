@@ -77,3 +77,9 @@ export interface PaymentMethod {
   isDefault: boolean;
   stripePaymentMethodId: string;
 }
+
+interface Domain {
+  id: number;
+  name: string;
+  apiKey: string;
+}

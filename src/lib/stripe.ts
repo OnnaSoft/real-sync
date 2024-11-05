@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
-import { CustomHttpClient } from '@onna-soft/stripe-bun'
+import { CustomHttpClient } from '@onna-soft/stripe-bun';
 
 dotenv.config();
 

@@ -4,6 +4,7 @@ import PlanModel, { PlanAttributes } from "./models/Plan";
 import PaymentMethodModel from "./models/PaymentMethod";
 import StripeEventModel from "./models/StripeEvent";
 import UserSubscriptionModel from "./models/UserSubscription";
+import TunnelModel from "./models/Tunnel";
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -45,6 +46,7 @@ export const User = UserModel(sequelize);
 export const Plan = PlanModel(sequelize);
 export const UserSubscription = UserSubscriptionModel(sequelize);
 export const PaymentMethod = PaymentMethodModel(sequelize);
+export const Tunnel = TunnelModel(sequelize);
 export const StripeEvent = StripeEventModel(sequelize);
 
 // Define associations
@@ -53,6 +55,7 @@ const models = {
   Plan,
   UserSubscription,
   PaymentMethod,
+  Tunnel,
   StripeEvent,
 };
 Object.values(models).forEach((model) => {
