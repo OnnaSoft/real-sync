@@ -7,7 +7,7 @@
     "build": "npx remix vite:build",
     "build:server": "NODE_ENV=development npx webpack --watch --config ./webpack.server.cjs",
     "dev": "bun ./src/server.ts",
-    "start": "cross-env NODE_ENV=production node ./server.js",
+    "start": "cross-env NODE_ENV=production bun ./src/server.ts",
     "type-check": "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -1,10 +1,11 @@
 import express, { Response, NextFunction } from 'express';
 import validateSessionToken, { RequestWithUser } from 'src/middlewares/validateSessionToken';
-import { Tunnel } from '../db';
+import { sequelize, Tunnel } from '../db';
 import { HttpError } from 'http-errors-enhanced';
 import { generateApiKey } from 'src/lib/utils';
 import { Domain } from 'src/types/models';
 import fetch from 'node-fetch';
+import { Transaction } from 'sequelize';
 
 // Request Body Interfaces
 interface CreateTunnelBody {
@@ -85,10 +86,13 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
 });
 
 tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, any, CreateTunnelBody>, res: Response<CreateTunnelResponse>, next: NextFunction) => {
+    let transaction: Transaction | null = null;
     try {
         if (!req.user || !req.user.id) {
             throw new HttpError(401, "Unauthorized");
         }
+
+        transaction = await sequelize.transaction();
 
         const { domain } = req.body;
 
@@ -97,6 +101,13 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
         }
 
         const apiKey = generateApiKey();
+
+        const newTunnel = await Tunnel.create({
+            domain,
+            userId: req.user.id,
+        }, { transaction }).catch(async () => {
+            throw new HttpError(500, "Error while creating tunnel in database");
+        });
 
         await fetch(`${LIPSTICK_ENDPOINT}/domains`, {
             method: "POST",
@@ -108,31 +119,25 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
                 "name": domain,
                 "apiKey": apiKey
             })
-        }).then((response)=> {
+        }).then((response) => {
             if (!response.ok) {
-                throw new HttpError(500, "Error while creating domain in Lipstick");
+                throw new HttpError(500, "Tunnel already exists in Lipstick");
             }
-        }).catch(() => {
+        }).catch((error) => {
+            if (error instanceof HttpError) {
+                throw error;
+            }
             throw new HttpError(500, "Error while creating domain in Lipstick");
         });
 
-        const newTunnel = await Tunnel.create({
-            domain,
-            userId: req.user.id,
-        }).catch(async () => {
-            await fetch(`${LIPSTICK_ENDPOINT}/domains/${domain}`, {
-                method: "DELETE",
-                headers: {
-                    "Authorization": LIPSTICK_APIKEY
-                }
-            }).catch(() => void(0));
-            throw new HttpError(500, "Error while creating tunnel in database");
-        })
+        await transaction.commit();
 
         const response = await fetch(`${LIPSTICK_ENDPOINT}/domains/${domain}`, {
             headers: {
                 "Authorization": LIPSTICK_APIKEY
             },
+        }).catch(() => {
+            throw new HttpError(500, "Error while fetching domain from Lipstick");
         });
 
         const lipstickResponse = await response.json() as Domain;
@@ -147,15 +152,19 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
             }
         });
     } catch (error) {
+        if (transaction) await transaction.rollback();
         next(error);
     }
 });
 
 tunnelsRouter.delete('/:id', validateSessionToken, async (req: RequestWithUser<{ id: string }>, res: Response, next: NextFunction) => {
+    let transaction: Transaction | null = null;
     try {
         if (!req.user || !req.user.id) {
             throw new HttpError(401, "Unauthorized");
         }
+
+        transaction = await sequelize.transaction();
 
         const { id } = req.params;
 
@@ -167,7 +176,7 @@ tunnelsRouter.delete('/:id', validateSessionToken, async (req: RequestWithUser<{
             throw new HttpError(404, "Tunnel not found");
         }
 
-        await tunnel.destroy();
+        await tunnel.destroy({ transaction });
 
         const response = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
             method: "DELETE",
@@ -176,12 +185,15 @@ tunnelsRouter.delete('/:id', validateSessionToken, async (req: RequestWithUser<{
             }
         });
 
+        await transaction.commit();
+
         if (!response.ok) {
             throw new HttpError(500, "Error while deleting domain in Lipstick");
         }
 
         res.status(204).send();
     } catch (error) {
+        if (transaction) await transaction.rollback();
         next(error);
     }
 });

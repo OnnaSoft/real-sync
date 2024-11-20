@@ -33,7 +33,7 @@ api.use(
       });
     }
 
-    res.status(500).json({ errors: { server: { message: "Server error" } } });
+    res.status(500).json({ errors: { server: { message: err.message } } });
   }
 );
 
