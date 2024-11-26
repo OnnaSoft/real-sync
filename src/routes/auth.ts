@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, Router } from "express";
 import { User, Plan, UserSubscription, sequelize } from "../db";
 import { Op, Transaction } from "sequelize";
 import bcrypt from "bcrypt";
@@ -8,7 +8,7 @@ import crypto from "crypto";
 import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 
-const authRouter = express.Router();
+const authRouter = Router();
 
 const requiredEnvVars = [
   "JWT_SECRET",

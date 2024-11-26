@@ -1,4 +1,4 @@
-import express, { Response, NextFunction } from 'express';
+import { Response, NextFunction, Router } from 'express';
 import { HttpError } from 'http-errors-enhanced';
 import stripe from 'src/lib/stripe';
 import validateSessionToken, { RequestWithUser } from 'src/middlewares/validateSessionToken';
@@ -16,11 +16,11 @@ interface BillingHistoryResponse {
     data: BillingHistory[];
 }
 
-const billingRouter = express.Router();
+const billingRouter = Router();
 
 billingRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: Response<BillingHistoryResponse>, next: NextFunction) => {
     try {
-        if (!req.user || !req.user.stripeCustomerId) {
+        if (!req.user?.stripeCustomerId) {
             throw new HttpError(401, "Unauthorized");
         }
 
@@ -36,7 +36,7 @@ billingRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
             } else if (invoice.id) {
                 try {
                     const invoiceData = await stripe.invoices.retrieve(invoice.id);
-                    pdfUrl = invoiceData.invoice_pdf || null;
+                    pdfUrl = invoiceData.invoice_pdf ?? null;
                 } catch (error) {
                     console.error(`Error retrieving PDF for invoice ${invoice.id}:`, error);
                 }

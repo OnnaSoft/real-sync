@@ -12,7 +12,6 @@ interface CreateTunnelBody {
     domain: string;
 }
 
-
 // Response Interfaces
 interface TunnelResponse {
     id: number;
