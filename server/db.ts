@@ -5,6 +5,7 @@ import PaymentMethodModel from "./models/PaymentMethod";
 import StripeEventModel from "./models/StripeEvent";
 import UserSubscriptionModel from "./models/UserSubscription";
 import TunnelModel from "./models/Tunnel";
+import TunnelConsumptionModel from "./models/TunnelConsumption";
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -48,6 +49,7 @@ export const UserSubscription = UserSubscriptionModel(sequelize);
 export const PaymentMethod = PaymentMethodModel(sequelize);
 export const Tunnel = TunnelModel(sequelize);
 export const StripeEvent = StripeEventModel(sequelize);
+export const TunnelConsumption = TunnelConsumptionModel(sequelize);
 
 // Define associations
 const models = {
@@ -57,10 +59,10 @@ const models = {
   PaymentMethod,
   Tunnel,
   StripeEvent,
+  TunnelConsumption
 };
-Object.values(models).forEach((model) => {
-  if (model.associate) model.associate(models);
-});
+Object.values(models)
+  .forEach((model) => ('associate' in model) && model.associate(models));
 
 // @ts-ignore
 sequelize.models = models;

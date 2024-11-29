@@ -1,9 +1,9 @@
 import express, { Response, NextFunction } from 'express';
-import validateSessionToken, { RequestWithUser } from 'src/middlewares/validateSessionToken';
+import validateSessionToken, { RequestWithUser } from 'server/middlewares/validateSessionToken';
 import { sequelize, Tunnel } from '../db';
 import { HttpError } from 'http-errors-enhanced';
-import { generateApiKey } from 'src/lib/utils';
-import { Domain } from 'src/types/models';
+import { generateApiKey } from 'server/lib/utils';
+import { Domain } from 'server/types/models';
 import fetch from 'node-fetch';
 import { Transaction } from 'sequelize';
 

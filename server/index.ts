@@ -1,8 +1,8 @@
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";
-import "./init.ts";
-import "./db";
-import api from "./routes";
+import "./init.js";
+import "./db.js";
+import api from "./routes/index.js";
 
 // Validate environment variables
 const requiredEnvVars = ["PORT"];
@@ -43,6 +43,10 @@ app.use("/", api);
 // @ts-ignore
 app.all("*", createRequestHandler({ build }));
 
+app.use((req, res) => {
+  res.status(404).send("Not found");
+});
+
 app.use(
   /**
    *
@@ -57,7 +61,7 @@ app.use(
   }
 );
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ?? 3000;
 
 app.listen(PORT, () => {
   console.log(`App listening on http://localhost:${PORT}`);

@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { RequestWithUser } from './validateSessionToken';
-import stripe from 'src/lib/stripe';
+import stripe from 'server/lib/stripe';
 import { HttpError } from 'http-errors-enhanced';
 
 export interface RequestWithUserAndPayment extends RequestWithUser {

@@ -5,7 +5,7 @@ import { Op } from "sequelize";
 import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 import { RequestWithSession } from "../types/http";
-import addPaymentMethodInfo, { RequestWithUserAndPayment } from "src/middlewares/addPaymentMethodInfo";
+import addPaymentMethodInfo, { RequestWithUserAndPayment } from "server/middlewares/addPaymentMethodInfo";
 
 const usersRouter = express.Router();
 

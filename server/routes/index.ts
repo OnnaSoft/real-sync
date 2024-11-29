@@ -8,6 +8,7 @@ import paymentMethodRouter from "./payment-methods";
 import webhookRouter from "./webhooks";
 import billingRouter from "./billing";
 import tunnelsRouter from "./tunnels";
+import consumptionRouter from "./consumption";
 
 const api = express.Router();
 api.use("/webhook", webhookRouter);
@@ -21,9 +22,14 @@ api.use("/users", usersRouter);
 api.use("/billing", billingRouter);
 api.use("/tunnels", tunnelsRouter);
 api.use("/payment-methods", paymentMethodRouter);
+api.use("/consumption", consumptionRouter);
+api.use((_req, res) => {
+  res.status(404).json({ errors: { server: { message: "Path not found" } } });
+})
 
 api.use(
-  (err: Error | HttpError & ErrorResBody, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // @ts-expect-error
+  (err: Error | HttpError & ErrorResBody, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (err instanceof HttpError) {
       if (err.errors) {
         return res.status(err.statusCode).json({ errors: err.errors });

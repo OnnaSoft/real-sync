@@ -1,7 +1,7 @@
 import { Response, NextFunction, Router } from 'express';
 import { HttpError } from 'http-errors-enhanced';
-import stripe from 'src/lib/stripe';
-import validateSessionToken, { RequestWithUser } from 'src/middlewares/validateSessionToken';
+import stripe from 'server/lib/stripe';
+import validateSessionToken, { RequestWithUser } from 'server/middlewares/validateSessionToken';
 
 interface BillingHistory {
     id: string;
