@@ -10,7 +10,7 @@ export interface TunnelConsumptionAttributes {
   updatedAt: Date;
 }
 
-export interface TunnelConsumptionCreationAttributes extends Omit<TunnelConsumptionAttributes, "id" | "createdAt" | "updatedAt"> {}
+export interface TunnelConsumptionCreationAttributes extends Omit<TunnelConsumptionAttributes, "id" | "createdAt" | "updatedAt"> { }
 
 interface TunnelConsumptionInstance extends Model<TunnelConsumptionAttributes, TunnelConsumptionCreationAttributes>, TunnelConsumptionAttributes {
   createdAt: Date;
@@ -55,7 +55,7 @@ const TunnelConsumptionModel = (sequelize: Sequelize): TunnelConsumptionModel =>
         },
       },
       dataUsage: {
-        type: DataTypes.BIGINT,
+        type: DataTypes.BIGINT({ unsigned: true }),
         allowNull: false,
         validate: {
           min: 0,

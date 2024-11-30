@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { HttpError } from "http-errors-enhanced";
 import { validateRequest } from "&/middlewares/validateRequest";
 import stripe from "&/lib/stripe";
@@ -11,28 +11,31 @@ export const updateConsumptionSchema = Joi.object({
     "string.empty": "The domain is required.",
     "any.required": "The domain is required.",
   }),
-  dataUsage: Joi.number().min(0).required().messages({
-    "number.base": "The traffic must be a number.",
-    "number.min": "The traffic must be a positive number.",
-    "any.required": "The traffic is required.",
+  dataUsage: Joi.number().integer().min(0).required().messages({
+    "number.base": "The data usage must be a number.",
+    "number.integer": "The data usage must be an integer.",
+    "number.min": "The data usage must be a positive number.",
+    "any.required": "The data usage is required.",
   }),
-  year: Joi.number().min(2000).max(9999).required().messages({
+  year: Joi.number().integer().min(2000).max(9999).required().messages({
     "number.base": "The year must be a number.",
-    "number.min": "The year must be greater than 2000.",
-    "number.max": "The year must be less than 9999.",
+    "number.integer": "The year must be an integer.",
+    "number.min": "The year must be 2000 or later.",
+    "number.max": "The year must be 9999 or earlier.",
     "any.required": "The year is required.",
   }),
-  month: Joi.number().min(1).max(12).required().messages({
+  month: Joi.number().integer().min(1).max(12).required().messages({
     "number.base": "The month must be a number.",
-    "number.min": "The month must be greater than 1.",
-    "number.max": "The month must be less than 12.",
+    "number.integer": "The month must be an integer.",
+    "number.min": "The month must be 1 or greater.",
+    "number.max": "The month must be 12 or less.",
     "any.required": "The month is required.",
   }),
 });
 
 export interface UpdateConsumptionRequest {
   domain: string;
-  dataUsage: bigint;
+  dataUsage: number;
   year: number;
   month: number;
 }
@@ -41,118 +44,85 @@ export interface UpdateConsumptionResponse {
   message: string;
 }
 
-export interface ErrorResponse {
-  error: string;
-}
-
 const consumptionRouter = express.Router();
 
 consumptionRouter.post(
   "/update-consumption",
-  // @ts-expect-error
+  // @ts-expect-error - Falta definir el tipo de req, res y next
   validateRequest(updateConsumptionSchema),
-  (req: Request<{}, {}, UpdateConsumptionRequest>, res: Response<UpdateConsumptionResponse>, next) => {
-    req.body.dataUsage = BigInt(req.body.dataUsage);
-    next();
-  },
-  async (req: Request<{}, {}, UpdateConsumptionRequest>, res: Response<UpdateConsumptionResponse>, next) => {
+  async (req: Request<{}, {}, UpdateConsumptionRequest>, res: Response<UpdateConsumptionResponse>, next: NextFunction) => {
     try {
-      const { domain, dataUsage, month, year } = req.body;
+      const { domain, dataUsage: _dataUsage, month, year } = req.body;
 
-      const tunnel = await Tunnel.findOne({ where: { domain } })
-        .catch(() => {
-          throw new HttpError(500, "Tunnel not found");
-        });
-
+      const dataUsage = BigInt(_dataUsage);
+      const tunnel = await Tunnel.findOne({ where: { domain } });
       if (!tunnel) {
-        throw new HttpError(404, "Tunnel not found");
+        throw new HttpError(404, "Túnel no encontrado");
       }
 
       const userId = tunnel.getDataValue("userId");
 
-      const userSubscription = await UserSubscription.findOne({ where: { userId } })
-        .catch(() => {
-          throw new HttpError(500, "Subscription not found");
-        });
-
+      const userSubscription = await UserSubscription.findOne({ where: { userId } });
       if (!userSubscription) {
-        throw new HttpError(404, "Subscription not found");
+        throw new HttpError(404, "Suscripción no encontrada");
       }
 
       const subscriptionId = userSubscription.getDataValue("stripeSubscriptionId");
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-        .catch(() => {
-          throw new HttpError(500, "Stripe subscription not found");
-        });
 
-      if (!subscription) {
-        throw new HttpError(404, "Stripe subscription not found");
-      }
-
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       const subscriptionItem = subscription.items.data[0];
-
       if (!subscriptionItem) {
-        throw new HttpError(500, "No plan found in the subscription");
+        throw new HttpError(500, "No se encontró un plan en la suscripción");
       }
 
-      const consumption = await TunnelConsumption.findOne({
+      let consumption = await TunnelConsumption.findOne({
         where: {
           tunnelId: tunnel.getDataValue("id"),
           year,
           month,
         },
-      }).catch((error) => {
-        console.log("Error finding consumption", error);
-        return null;
       });
 
       if (!consumption) {
-        const items = dataUsage / BigInt(1024 * 1024 * 1024);
-        console.log("Extra data cost", items);
-
         await TunnelConsumption.create({
           tunnelId: tunnel.getDataValue("id"),
           year,
           month,
           dataUsage,
-        }).catch(() => {
-          throw new HttpError(500, "Error creating consumption");
         });
 
-        stripe.subscriptions.update(subscriptionId, {
-          items: [
-            {
-              id: subscriptionItem.id,
-              price: subscriptionItem.price.id,
-            },
-          ],
-        }).catch(async (error) => {
-          console.log("Error deleting consumption", error);
-          await TunnelConsumption.destroy({
-            where: {
-              tunnelId: tunnel.getDataValue("id"),
-              year,
-              month,
-            },
-          });
-        }).catch(() => {
-          throw new HttpError(500, "Error updating subscription");
+        const _additionalUsageGB = Number(dataUsage / BigInt(1024 * 1024 * 1024))
+        const additionalUsageGB = Math.ceil(_additionalUsageGB);
+
+        await stripe.subscriptionItems.createUsageRecord(subscriptionItem.id, {
+          quantity: additionalUsageGB,
+          timestamp: Math.floor(Date.now() / 1000),
+          action: 'increment',
         });
       } else {
-        /*consumption.setDataValue("dataUsage", dataUsage);
-        await consumption.save().catch((error) => {
-            throw new HttpError(500, "Error updating consumption");
-        });*/
+        const previousUsage = consumption.getDataValue("dataUsage");
+        const additionalUsage = dataUsage - BigInt(previousUsage);
+
+        if (additionalUsage > 0) {
+          const _additionalUsageGB = Number(dataUsage / BigInt(1024 * 1024 * 1024))
+          const additionalUsageGB = Math.ceil(_additionalUsageGB);
+
+          await stripe.subscriptionItems.createUsageRecord(subscriptionItem.id, {
+            quantity: additionalUsageGB,
+            timestamp: Math.floor(Date.now() / 1000),
+            action: 'increment',
+          });
+        }
+
+        await consumption.update({ dataUsage });
       }
 
-      // complete
-
-      res.status(200).json({ message: "Updated" });
+      res.status(200).json({ message: "Updated consumption" });
     } catch (error) {
       next(error);
     }
   }
 );
 
-
 export default consumptionRouter;
+

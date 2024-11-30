@@ -3,7 +3,6 @@ import { Transaction } from "sequelize";
 import { Plan, sequelize } from "&/db";
 import logger from "&/lib/logger";
 
-// Validate environment variables
 const requiredEnvVars = [
   "STRIPE_FREE_PRICE_ID",
   "STRIPE_PRO_PRICE_ID",
@@ -20,7 +19,6 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-// Function to create or update default plans
 export async function ensureDefaultPlans() {
   const defaultPlans: Array<Omit<PlanAttributes, "id">> = [
     {
