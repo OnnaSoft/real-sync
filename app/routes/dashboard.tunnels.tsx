@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,23 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Globe, Plus, Trash2 } from "lucide-react";
-
-// Simulated tunnel service
-const tunnelService = {
-  createTunnel: () =>
-    new Promise<{ id: string; url: string }>((resolve) =>
-      setTimeout(
-        () =>
-          resolve({
-            id: `tunnel-${Date.now()}`,
-            url: `https://demo${Date.now()}.realsync-tunnel.com`,
-          }),
-        1000
-      )
-    ),
-  deleteTunnel: (id: string) =>
-    new Promise<void>((resolve) => setTimeout(resolve, 1000)),
-};
+import { useToast } from "@/hooks/use-toast";
+import useFetch from "@/hooks/useFetch";
+import { useAppSelector } from "~/store/hooks";
 
 interface Tunnel {
   id: string;
@@ -40,30 +26,90 @@ interface Tunnel {
 }
 
 export default function Tunnels() {
-  const [tunnels, setTunnels] = useState<Tunnel[]>([
-    { id: "tunnel-1", url: "https://demo8080.realsync-tunnel.com" },
-    { id: "tunnel-2", url: "https://demo3000.realsync-tunnel.com" },
-  ]);
+  const [tunnels, setTunnels] = useState<Tunnel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  const fetch = useFetch();
+  const token = useAppSelector((state) => state.auth.token);
+
+  useEffect(() => {
+    fetchTunnels();
+  }, []);
+
+  const fetchTunnels = async () => {
+    try {
+      const response = await fetch('/tunnels', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch tunnels');
+      }
+      const data = await response.json();
+      setTunnels(data);
+    } catch (error) {
+      console.error("Error fetching tunnels:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch tunnels. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCreateTunnel = async () => {
     try {
-      const newTunnel = await tunnelService.createTunnel();
+      const response = await fetch('/tunnels', {
+        headers: { Authorization: `Bearer ${token}` },
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create tunnel');
+      }
+      const newTunnel = await response.json();
       setTunnels([...tunnels, newTunnel]);
+      toast({
+        title: "Success",
+        description: "Tunnel created successfully.",
+      });
     } catch (error) {
       console.error("Error creating tunnel:", error);
-      alert("Failed to create tunnel. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to create tunnel. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDeleteTunnel = async (id: string) => {
     try {
-      await tunnelService.deleteTunnel(id);
+      const response = await fetch(`/tunnels/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete tunnel');
+      }
       setTunnels(tunnels.filter((tunnel) => tunnel.id !== id));
+      toast({
+        title: "Success",
+        description: "Tunnel deleted successfully.",
+      });
     } catch (error) {
       console.error("Error deleting tunnel:", error);
-      alert("Failed to delete tunnel. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to delete tunnel. Please try again.",
+        variant: "destructive",
+      });
     }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -131,3 +177,4 @@ export default function Tunnels() {
     </div>
   );
 }
+
