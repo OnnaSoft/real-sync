@@ -7,12 +7,10 @@ import { Domain } from '&/types/models';
 import fetch from 'node-fetch';
 import { Transaction } from 'sequelize';
 
-// Request Body Interfaces
 interface CreateTunnelBody {
   domain: string;
 }
 
-// Response Interfaces
 interface TunnelResponse {
   id: number;
   domain: string;
