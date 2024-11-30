@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -70,7 +70,7 @@ export default function Communication() {
         enableCalls: newApp.enableCalls,
         enableVideoCalls: newApp.enableVideoCalls,
         enableConversationLogging: newApp.enableConversationLogging,
-        dedicatedServerPlanId: newApp.dedicatedServerPlan?.id || 0,
+        dedicatedServerPlanId: newApp.dedicatedServerPlan?.id ?? 0,
       });
       setNewApp({
         name: "",
@@ -230,8 +230,8 @@ export default function Communication() {
               <Select
                 onValueChange={handleServerChange}
                 value={
-                  editingApp?.dedicatedServerPlan?.size ||
-                  newApp.dedicatedServerPlan?.size ||
+                  editingApp?.dedicatedServerPlan?.size ??
+                  newApp.dedicatedServerPlan?.size ??
                   "-"
                 }
                 disabled={!!editingApp}
