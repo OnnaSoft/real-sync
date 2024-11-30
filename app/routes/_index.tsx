@@ -202,9 +202,9 @@ export default function IndexPage() {
 }
 
 interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
+  readonly icon: React.ReactNode;
+  readonly title: string;
+  readonly description: string;
 }
 
 function FeatureCard({ icon, title, description }: FeatureCardProps) {
@@ -223,14 +223,8 @@ interface UsageCardProps {
   description: string;
 }
 
-function UsageCard({ icon, title, description }: UsageCardProps) {
-  return (
-    <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition duration-300 transform hover:-translate-y-1">
-      <div className="flex justify-center mb-3">{icon}</div>
-      <h3 className="text-lg font-semibold mb-2 text-center">{title}</h3>
-      <p className="text-sm text-gray-600 text-center">{description}</p>
-    </div>
-  );
+function UsageCard(props: Readonly<UsageCardProps>) {
+  return <FeatureCard {...props} />;
 }
 
 interface BenefitCardProps {
@@ -239,7 +233,7 @@ interface BenefitCardProps {
   description: string;
 }
 
-function BenefitCard({ icon, title, description }: BenefitCardProps) {
+function BenefitCard({ icon, title, description }: Readonly<BenefitCardProps>) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition duration-300">
       <div className="flex justify-center mb-4">{icon}</div>

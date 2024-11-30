@@ -8,7 +8,7 @@ export interface RequestWithUserAndPayment extends RequestWithUser {
 }
 
 const addPaymentMethodInfo = async (req: RequestWithUserAndPayment, res: Response, next: NextFunction): Promise<void> => {
-  if (!req.user || !req.user.id) {
+  if (!req.user?.id) {
     res.status(401).json({ error: 'User not authenticated' });
     return;
   }
