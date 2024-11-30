@@ -99,6 +99,8 @@ consumptionRouter.post(
           timestamp: Math.floor(Date.now() / 1000),
           action: 'increment',
         });
+
+        console.log("Created consumption", additionalUsageGB);
       } else {
         const previousUsage = consumption.getDataValue("dataUsage");
         const additionalUsage = dataUsage - BigInt(previousUsage);
@@ -115,6 +117,7 @@ consumptionRouter.post(
         }
 
         await consumption.update({ dataUsage });
+        console.log("Created consumption", additionalUsage);
       }
 
       res.status(200).json({ message: "Updated consumption" });
