@@ -64,6 +64,10 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
           "Authorization": LIPSTICK_APIKEY
         },
       });
+      if (!response.ok) {
+        console.log(await response.blob())
+        throw new HttpError(500, "Error while fetching domain from Lipstick");
+      }
       const lipstickResponse = await response.json() as Domain;
       return {
         id: tunnel.id,
@@ -76,7 +80,6 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
 
     res.status(200).json({ data });
   } catch (error) {
-    console.trace(error);
     next(error);
   }
 });
