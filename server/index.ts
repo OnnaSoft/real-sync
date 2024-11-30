@@ -20,8 +20,7 @@ if (missingEnvVars.length > 0) {
 const viteDevServer =
   process.env.NODE_ENV === "production"
     ? null
-    : // @ts-ignore
-      await import("vite").then((vite) =>
+    : await import("vite").then((vite) =>
         vite.createServer({
           server: { middlewareMode: true },
         })
@@ -35,8 +34,7 @@ app.use(
 
 const build = viteDevServer
   ? async () => await viteDevServer.ssrLoadModule("virtual:remix/server-build")
-  : // @ts-ignore
-    await import("../build/server/index.js");
+  : await import("../build/server/index.js");
 
 app.use("/", api);
 

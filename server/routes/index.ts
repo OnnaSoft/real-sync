@@ -23,9 +23,6 @@ api.use("/billing", billingRouter);
 api.use("/tunnels", tunnelsRouter);
 api.use("/payment-methods", paymentMethodRouter);
 api.use("/consumption", consumptionRouter);
-api.use((_req, res) => {
-  res.status(404).json({ errors: { server: { message: "Path not found" } } });
-})
 
 api.use(
   // @ts-expect-error
