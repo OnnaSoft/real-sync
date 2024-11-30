@@ -1,6 +1,23 @@
 import { Plan } from "&/db";
 import { PlanAttributes } from "&/models/Plan";
 
+// Validate environment variables
+const requiredEnvVars = [
+  "STRIPE_FREE_PRICE_ID",
+  "STRIPE_PRO_PRICE_ID",
+  "STRIPE_BUSINESS_PRICE_ID",
+];
+const missingEnvVars = requiredEnvVars.filter(
+  (varName) => !process.env[varName]
+);
+
+if (missingEnvVars.length > 0) {
+  console.error(
+    `Missing required environment variables: ${missingEnvVars.join(", ")}`
+  );
+  process.exit(1);
+}
+
 // Function to create or update default plans
 export async function ensureDefaultPlans() {
   const defaultPlans: Array<Omit<PlanAttributes, "id">> = [

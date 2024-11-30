@@ -15,9 +15,6 @@ const requiredEnvVars = [
   "DB_PASSWORD",
   "DB_HOST",
   "DB_PORT",
-  "STRIPE_FREE_PRICE_ID",
-  "STRIPE_PRO_PRICE_ID",
-  "STRIPE_BUSINESS_PRICE_ID",
 ];
 const missingEnvVars = requiredEnvVars.filter(
   (varName) => !process.env[varName]
