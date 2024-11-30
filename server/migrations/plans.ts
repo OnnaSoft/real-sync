@@ -1,5 +1,7 @@
-import { Plan } from "&/db";
 import { PlanAttributes } from "&/models/Plan";
+import { Transaction } from "sequelize";
+import { Plan, sequelize } from "&/db";
+import logger from "&/lib/logger";
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -59,21 +61,27 @@ export async function ensureDefaultPlans() {
     },
   ];
 
-  for (const planData of defaultPlans) {
-    try {
-      const [plan, created] = await Plan.findOrCreate({
-        where: { code: planData.code },
-        defaults: planData,
-      });
+  try {
+    await sequelize.transaction(async (t: Transaction) => {
+      for (const planData of defaultPlans) {
+        const [plan, created] = await Plan.findOrCreate({
+          where: { code: planData.code },
+          defaults: planData,
+          transaction: t,
+        });
 
-      if (!created) {
-        await plan.update(planData);
-        console.log(`Updated existing plan: ${planData.name}`);
-      } else {
-        console.log(`Created new plan: ${planData.name}`);
+        if (!created) {
+          await plan.update(planData, { transaction: t });
+          logger.info(`Updated existing plan: ${planData.name}`);
+        } else {
+          logger.info(`Created new plan: ${planData.name}`);
+        }
       }
-    } catch (error) {
-      console.error(`Error ensuring default plan ${planData.name}:`, error);
-    }
+    });
+
+    logger.info('All default plans have been ensured successfully');
+  } catch (error) {
+    logger.error('Error ensuring default plans:', error);
+    throw error;
   }
 }
