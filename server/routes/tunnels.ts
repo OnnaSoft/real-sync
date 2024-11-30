@@ -42,7 +42,6 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-const rejectUnauthorized = process.env.REJECT_UNAUTHORIZED !== 'false';
 const LIPSTICK_ENDPOINT = process.env.LIPSTICK_ENDPOINT ?? "";
 const LIPSTICK_APIKEY = process.env.LIPSTICK_APIKEY ?? "";
 
