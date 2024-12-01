@@ -9,6 +9,8 @@ import { Transaction } from 'sequelize';
 
 interface CreateTunnelBody {
   domain: string;
+  allowMultipleConnections: boolean;
+  isEnabled: boolean;
 }
 
 interface TunnelResponse {
@@ -80,6 +82,7 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
 
     res.status(200).json({ data });
   } catch (error) {
+    console.log(error);
     next(error);
   }
 });
@@ -93,7 +96,7 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
 
     transaction = await sequelize.transaction();
 
-    const { domain } = req.body;
+    const { domain, allowMultipleConnections, isEnabled } = req.body;
 
     if (!domain) {
       throw new HttpError(400, "Domain is required");
@@ -103,8 +106,10 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
 
     const newTunnel = await Tunnel.create({
       domain,
+      isEnabled,
+      allowMultipleConnections,
       userId: req.user.id,
-    }, { transaction }).catch(async () => {
+    }, { transaction }).catch(async (error) => {
       throw new HttpError(500, "Error while creating tunnel in database");
     });
 
@@ -156,7 +161,12 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
   }
 });
 
-tunnelsRouter.delete('/:id', validateSessionToken, async (req: RequestWithUser<{ id: string }>, res: Response, next: NextFunction) => {
+interface UpdateTunnelBody {
+  isEnabled?: boolean;
+  allowMultipleConnections?: boolean;
+}
+
+tunnelsRouter.patch('/:id', validateSessionToken, async (req: RequestWithUser<{ id: string }, any, UpdateTunnelBody>, res: Response, next: NextFunction) => {
   let transaction: Transaction | null = null;
   try {
     if (!req.user?.id) {
@@ -166,6 +176,7 @@ tunnelsRouter.delete('/:id', validateSessionToken, async (req: RequestWithUser<{
     transaction = await sequelize.transaction();
 
     const { id } = req.params;
+    const { isEnabled, allowMultipleConnections } = req.body;
 
     const tunnel = await Tunnel.findOne({
       where: { id, userId: req.user.id }
@@ -175,22 +186,25 @@ tunnelsRouter.delete('/:id', validateSessionToken, async (req: RequestWithUser<{
       throw new HttpError(404, "Tunnel not found");
     }
 
-    await tunnel.destroy({ transaction });
-
-    const response = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": LIPSTICK_APIKEY
-      }
-    });
-
-    await transaction.commit();
-
-    if (!response.ok) {
-      throw new HttpError(500, "Error while deleting domain in Lipstick");
+    if (typeof isEnabled === 'boolean') {
+      tunnel.isEnabled = isEnabled;
+    }
+    if (typeof allowMultipleConnections === 'boolean') {
+      tunnel.allowMultipleConnections = allowMultipleConnections;
     }
 
-    res.status(204).send();
+    await tunnel.save({ transaction });
+    await transaction.commit();
+
+    res.status(200).json({
+      data: {
+        id: tunnel.id,
+        domain: tunnel.domain,
+        isEnabled: tunnel.isEnabled,
+        allowMultipleConnections: tunnel.allowMultipleConnections,
+        updatedAt: tunnel.updatedAt
+      }
+    });
   } catch (error) {
     if (transaction) await transaction.rollback();
     next(error);

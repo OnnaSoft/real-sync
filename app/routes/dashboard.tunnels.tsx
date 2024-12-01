@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Globe, Plus, Trash2 } from "lucide-react";
+import { Globe, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import useFetch from "@/hooks/useFetch";
 import { useAppSelector } from "@/store/hooks";
@@ -34,6 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useLoaderData } from "@remix-run/react";
 
 interface GetTunnelsResponse {
   data: Tunnel[];
@@ -44,12 +45,28 @@ const formSchema = z.object({
   allowMultipleConnections: z.boolean().default(false),
 });
 
+type LoaderData = {
+  tunnelRootDomain: string;
+};
+
+export const loader = async () => {
+  const tunnelRootDomain = process.env.TUNNEL_ROOT_DOMAIN;
+
+  if (!tunnelRootDomain) {
+    throw new Error("TUNNEL_ROOT_DOMAIN environment variable is not set");
+  }
+
+  return { tunnelRootDomain };
+};
+
 export default function Tunnels() {
   const [tunnels, setTunnels] = useState<Tunnel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [visibleApiKeys, setVisibleApiKeys] = useState<{ [key: number]: boolean }>({});
   const { toast } = useToast();
   const fetch = useFetch();
   const token = useAppSelector((state) => state.auth.token);
+  const { tunnelRootDomain } = useLoaderData<LoaderData>();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,11 +102,18 @@ export default function Tunnels() {
     }
   };
 
-  const handleCreateTunnel = async () => {
+  const handleCreateTunnel = async (values: z.infer<typeof formSchema>) => {
     try {
       const response = await fetch('/tunnels', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
         method: 'POST',
+        body: JSON.stringify({
+          domain: values.subdomain + '.' + tunnelRootDomain,
+          allowMultipleConnections: values.allowMultipleConnections,
+        }),
       });
       if (!response.ok) {
         throw new Error('Failed to create tunnel');
@@ -100,6 +124,7 @@ export default function Tunnels() {
         title: "Success",
         description: "Tunnel created successfully.",
       });
+      form.reset();
     } catch (error) {
       console.error("Error creating tunnel:", error);
       toast({
@@ -134,6 +159,10 @@ export default function Tunnels() {
     }
   };
 
+  const toggleApiKeyVisibility = (id: number) => {
+    setVisibleApiKeys(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -159,10 +188,13 @@ export default function Tunnels() {
                   <FormItem>
                     <FormLabel>Subdomain</FormLabel>
                     <FormControl>
-                      <Input placeholder="your-subdomain" {...field} />
+                      <div className="flex items-center">
+                        <Input placeholder="your-subdomain" {...field} />
+                        <span className="ml-2 w-[200px]">.{tunnelRootDomain}</span>
+                      </div>
                     </FormControl>
                     <FormDescription>
-                      Choose a subdomain for your tunnel (e.g., your-subdomain.realsync-tunnel.com)
+                      Choose a subdomain for your tunnel (e.g., your-subdomain.{tunnelRootDomain})
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -209,7 +241,8 @@ export default function Tunnels() {
             <TableHeader>
               <TableRow>
                 <TableHead>Tunnel URL</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-[200px]">API Key</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -219,23 +252,37 @@ export default function Tunnels() {
                     <div className="flex items-center space-x-2">
                       <Globe className="h-4 w-4" />
                       <a
-                        href={`https://${tunnel.domain}`}
+                        href={"https://" + tunnel.domain}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-500 hover:underline"
                       >
-                        {`https://${tunnel.domain}`}
+                        https://{tunnel.domain}
                       </a>
                     </div>
                   </TableCell>
+                  <TableCell className="font-mono">
+                    <div className="w-[300px] overflow-hidden text-ellipsis whitespace-nowrap">
+                      {visibleApiKeys[tunnel.id] ? tunnel.apiKey : '••••••••••••••••'}
+                    </div>
+                  </TableCell>
                   <TableCell>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteTunnel(tunnel.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleApiKeyVisibility(tunnel.id)}
+                      >
+                        {visibleApiKeys[tunnel.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteTunnel(tunnel.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
