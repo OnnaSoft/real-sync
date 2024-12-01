@@ -19,9 +19,15 @@ interface TunnelsListProps {
   tunnels: Tunnel[];
   onToggleStatus: (id: number) => void;
   onGenerateNewApiKey: (id: number) => void;
+  onToggleMultipleConnections: (id: number) => void;
 }
 
-export const TunnelsList: React.FC<TunnelsListProps> = ({ tunnels, onToggleStatus, onGenerateNewApiKey }) => {
+export const TunnelsList: React.FC<TunnelsListProps> = ({
+  tunnels,
+  onToggleStatus,
+  onGenerateNewApiKey,
+  onToggleMultipleConnections
+}) => {
   return (
     <Card className="bg-white">
       <CardHeader>
@@ -41,8 +47,9 @@ export const TunnelsList: React.FC<TunnelsListProps> = ({ tunnels, onToggleStatu
             {tunnels.map((tunnel) => (
               <TunnelRow
                 key={tunnel.id} tunnel={tunnel}
-                onToggleStatus={onToggleStatus}
-                onGenerateNewApiKey={onGenerateNewApiKey} />
+                onToggleMultipleConnections={onToggleMultipleConnections}
+                onGenerateNewApiKey={onGenerateNewApiKey}
+                onToggleStatus={onToggleStatus} />
             ))}
           </TableBody>
         </Table>

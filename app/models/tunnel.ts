@@ -4,6 +4,7 @@ export interface Tunnel {
     domain: string;
     apiKey: string;
     isEnabled: boolean;
+    allowMultipleConnections: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -18,6 +18,7 @@ interface TunnelResponse {
   domain: string;
   apiKey: string;
   isEnabled: boolean;
+  allowMultipleConnections: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,18 +59,31 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
 
     const tunnels = await Tunnel.findAll({
       where: { userId: req.user.id },
-      attributes: ['id', 'domain', 'isEnabled', 'createdAt', 'updatedAt']
+      attributes: [
+        'id', 
+        'domain',
+        'isEnabled',
+        'allowMultipleConnections',
+        'createdAt', 'updatedAt'
+      ]
     });
 
-    const data = await Promise.all(tunnels.map(async (tunnel) => {
+    const data = await Promise.allSettled(tunnels.map(async (tunnel) => {
       const response = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.getDataValue('domain')}`, {
         headers: {
           "Authorization": LIPSTICK_APIKEY
         },
       });
       if (!response.ok) {
-        console.log(await response.blob())
-        throw new HttpError(500, "Error while fetching domain from Lipstick");
+        return {
+          id: tunnel.id,
+          domain: tunnel.domain,
+          apiKey: "",
+          isEnabled: false,
+          allowMultipleConnections: tunnel.allowMultipleConnections,
+          createdAt: tunnel.createdAt,
+          updatedAt: tunnel.updatedAt
+        }
       }
       const lipstickResponse = await response.json() as Domain;
       return {
@@ -77,12 +91,17 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
         domain: tunnel.domain,
         apiKey: lipstickResponse.apiKey,
         isEnabled: tunnel.isEnabled,
+        allowMultipleConnections: tunnel.allowMultipleConnections,
         createdAt: tunnel.createdAt,
         updatedAt: tunnel.updatedAt
       }
     }));
 
-    res.status(200).json({ data });
+    res.status(200).json({
+      data: data
+        .filter(p => p.status === "fulfilled")
+        .map(p => p.value)
+    });
   } catch (error) {
     console.log(error);
     next(error);
@@ -153,6 +172,7 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
         id: newTunnel.id,
         domain: newTunnel.domain,
         apiKey: lipstickResponse.apiKey,
+        allowMultipleConnections: newTunnel.allowMultipleConnections,
         isEnabled: newTunnel.isEnabled,
         createdAt: newTunnel.createdAt,
         updatedAt: newTunnel.updatedAt
@@ -195,7 +215,23 @@ tunnelsRouter.patch('/:id', validateSessionToken, async (req: RequestWithUser<{ 
     if (typeof allowMultipleConnections === 'boolean') {
       tunnel.allowMultipleConnections = allowMultipleConnections;
     }
-    console.log(tunnel.toJSON(), isEnabled);
+    const updateResponse = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": LIPSTICK_APIKEY
+      },
+      body: JSON.stringify({
+        "allowMultipleConnections": tunnel.allowMultipleConnections,
+        "isEnabled": tunnel.isEnabled
+      })
+    }).catch(() => {
+      throw new HttpError(500, "Error while updating domain in Lipstick");
+    });
+
+    if (!updateResponse.ok) {
+      throw new HttpError(500, "Error while updating domain in Lipstick");
+    }
 
     await tunnel.save({ transaction });
     await transaction.commit();
@@ -206,7 +242,77 @@ tunnelsRouter.patch('/:id', validateSessionToken, async (req: RequestWithUser<{ 
         domain: tunnel.domain,
         isEnabled: tunnel.isEnabled,
         allowMultipleConnections: tunnel.allowMultipleConnections,
-        updatedAt: tunnel.updatedAt
+        updatedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    if (transaction) await transaction.rollback().catch((error) => {
+      console.error("Error while rolling back transaction", error);
+    });
+    next(error);
+  }
+});
+
+
+tunnelsRouter.post('/:id/regenerate-api-key', validateSessionToken, async (req: RequestWithUser<{ id: string }>, res: Response, next: NextFunction) => {
+  let transaction: Transaction | null = null;
+  try {
+    if (!req.user?.id) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    transaction = await sequelize.transaction();
+
+    const { id } = req.params;
+
+    const tunnel = await Tunnel.findOne({
+      where: { id, userId: req.user.id }
+    });
+
+    if (!tunnel) {
+      throw new HttpError(404, "Tunnel not found");
+    }
+
+    const newApiKey = generateApiKey();
+
+    const updateResponse = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": LIPSTICK_APIKEY
+      },
+      body: JSON.stringify({
+        "apiKey": newApiKey
+      })
+    }).catch(() => {
+      throw new HttpError(500, "Error while updating API key in Lipstick");
+    });
+
+    if (!updateResponse.ok) {
+      throw new HttpError(500, "Error while updating API key in Lipstick");
+    }
+
+    await transaction.commit();
+
+    const fetchResponse = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
+      headers: {
+        "Authorization": LIPSTICK_APIKEY
+      },
+    });
+
+    if (!fetchResponse.ok) {
+      throw new HttpError(500, "Error while fetching updated domain from Lipstick");
+    }
+
+    const lipstickResponse = await fetchResponse.json() as Domain;
+
+    res.status(200).json({
+      data: {
+        id: tunnel.id,
+        domain: tunnel.domain,
+        apiKey: lipstickResponse.apiKey,
+        isEnabled: tunnel.isEnabled,
+        updatedAt: new Date()
       }
     });
   } catch (error) {

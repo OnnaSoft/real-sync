@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Globe, Eye, EyeOff, RefreshCw, ToggleLeft, ToggleRight, Copy, Check } from 'lucide-react';
+import { Globe, Eye, EyeOff, RefreshCw, ToggleLeft, ToggleRight, Copy, Check, Users } from 'lucide-react';
 import { Tunnel } from "@/models/tunnel";
 import { ConfirmDisableDialog } from "./ConfirmDisableDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -10,9 +10,15 @@ interface TunnelRowProps {
   tunnel: Tunnel;
   onToggleStatus: (id: number) => void;
   onGenerateNewApiKey: (id: number) => void;
+  onToggleMultipleConnections: (id: number) => void;
 }
 
-export const TunnelRow: React.FC<TunnelRowProps> = ({ tunnel, onToggleStatus, onGenerateNewApiKey }) => {
+export const TunnelRow: React.FC<TunnelRowProps> = ({ 
+  tunnel, 
+  onToggleStatus, 
+  onGenerateNewApiKey,
+  onToggleMultipleConnections
+}) => {
   const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -119,6 +125,19 @@ export const TunnelRow: React.FC<TunnelRowProps> = ({ tunnel, onToggleStatus, on
               }`}
             >
               {tunnel.isEnabled ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onToggleMultipleConnections(tunnel.id)}
+              title={tunnel.allowMultipleConnections ? "Disable Multiple Connections" : "Enable Multiple Connections"}
+              className={`${
+                tunnel.allowMultipleConnections
+                  ? 'bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-300'
+                  : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
+              }`}
+            >
+              <Users className="h-4 w-4" />
             </Button>
           </div>
         </TableCell>

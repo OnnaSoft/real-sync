@@ -109,19 +109,81 @@ export default function Tunnels({ tunnelRootDomain }: TunnelsProps) {
       });
     }
   };
-  const onGenerateNewApiKey = (id: number) => {
+  const onGenerateNewApiKey = async (id: number) => {
+    try {
+      const tunnel = tunnels.find((tunnel) => tunnel.id === id);
+      if (!tunnel) return;
 
+      const response = await fetch(`/tunnels/${id}/regenerate-api-key`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        method: 'POST',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete tunnel');
+      }
+      await fetchTunnels();
+      toast({
+        title: "Success",
+        description: "Tunnel updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating tunnel:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update tunnel. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+  const onToggleMultipleConnections = async (id: number) => {
+    try {
+      const tunnel = tunnels.find((tunnel) => tunnel.id === id);
+      if (!tunnel) return;
+
+      const response = await fetch(`/tunnels/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        method: 'PATCH',
+        body: JSON.stringify({ allowMultipleConnections: !tunnel.allowMultipleConnections }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete tunnel');
+      }
+      await fetchTunnels();
+      toast({
+        title: "Success",
+        description: "Tunnel updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error updating tunnel:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update tunnel. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
+  const tunnelsListProps = {
+    tunnels,
+    onToggleStatus,
+    onGenerateNewApiKey,
+    onToggleMultipleConnections,
+  };
 
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Manage Tunnels</h2>
       <CreateTunnelForm tunnelRootDomain={tunnelRootDomain} onCreateTunnel={handleCreateTunnel} />
-      <TunnelsList tunnels={tunnels} onToggleStatus={onToggleStatus} onGenerateNewApiKey={onGenerateNewApiKey} />
+      <TunnelsList {...tunnelsListProps} />
     </div>
   );
 }
