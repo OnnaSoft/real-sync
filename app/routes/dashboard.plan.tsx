@@ -1,10 +1,10 @@
 import ActivePlan from "~/components/ActivePlan";
-import Dashboard from "~/components/Dashboard";
+import DashboardLayout from "~/components/Dashboard/DashboardLayout";
 
 export default function Page() {
   return (
-    <Dashboard>
+    <DashboardLayout>
       <ActivePlan />
-    </Dashboard>
+    </DashboardLayout>
   )
 }

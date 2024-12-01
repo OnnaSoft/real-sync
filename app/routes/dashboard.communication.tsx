@@ -1,10 +1,10 @@
 import Communication from "~/components/Communication";
-import Dashboard from "~/components/Dashboard";
+import DashboardLayout from "~/components/Dashboard/DashboardLayout";
 
 export default function Page() {
   return (
-    <Dashboard>
+    <DashboardLayout>
       <Communication />
-    </Dashboard>
+    </DashboardLayout>
   )
 }

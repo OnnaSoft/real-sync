@@ -8,7 +8,7 @@ import { PaymentMethodDialog } from "./PaymentMethodDialog";
 import { Button } from "@/components/ui/button";
 import { Menu, Loader2 } from 'lucide-react';
 
-const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
+const DashboardLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
   const auth = useAppSelector((state) => state.auth);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -109,5 +109,5 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 };
 
-export default Dashboard;
+export default DashboardLayout;
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Globe, Eye, EyeOff, RefreshCw, ToggleLeft, ToggleRight, Copy, Check, Users } from 'lucide-react';
+import { Globe, Eye, EyeOff, RefreshCw, ToggleLeft, ToggleRight, Copy, Check, Network } from 'lucide-react';
 import { Tunnel } from "@/models/tunnel";
 import { ConfirmDisableDialog } from "./ConfirmDisableDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -133,11 +133,11 @@ export const TunnelRow: React.FC<TunnelRowProps> = ({
               title={tunnel.allowMultipleConnections ? "Disable Multiple Connections" : "Enable Multiple Connections"}
               className={`${
                 tunnel.allowMultipleConnections
-                  ? 'bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-300'
+                  ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-300'
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300'
               }`}
             >
-              <Users className="h-4 w-4" />
+              <Network className="h-4 w-4" />
             </Button>
           </div>
         </TableCell>

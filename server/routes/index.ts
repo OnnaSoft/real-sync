@@ -1,14 +1,14 @@
 import express from "express";
 import { HttpError } from "http-errors-enhanced";
-import { ErrorResBody } from "../types/http";
-import authRouter from "./auth";
-import plansRouter from "./plans";
-import usersRouter from "./users";
-import paymentMethodRouter from "./payment-methods";
-import webhookRouter from "./webhooks";
-import billingRouter from "./billing";
-import tunnelsRouter from "./tunnels";
-import consumptionRouter from "./consumption";
+import { ErrorResBody } from "&/types/http";
+import authRouter from "&/routes/auth";
+import plansRouter from "&/routes/plans";
+import usersRouter from "&/routes/users";
+import paymentMethodRouter from "&/routes/payment-methods";
+import webhookRouter from "&/routes/webhooks";
+import billingRouter from "&/routes/billing";
+import tunnelsRouter from "&/routes/tunnels";
+import consumptionRouter from "&/routes/consumption";
 
 const api = express.Router();
 api.use("/webhook", webhookRouter);
