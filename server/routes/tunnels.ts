@@ -17,6 +17,7 @@ interface TunnelResponse {
   id: number;
   domain: string;
   apiKey: string;
+  isEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,7 +58,7 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
 
     const tunnels = await Tunnel.findAll({
       where: { userId: req.user.id },
-      attributes: ['id', 'domain', 'createdAt', 'updatedAt']
+      attributes: ['id', 'domain', 'isEnabled', 'createdAt', 'updatedAt']
     });
 
     const data = await Promise.all(tunnels.map(async (tunnel) => {
@@ -75,6 +76,7 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
         id: tunnel.id,
         domain: tunnel.domain,
         apiKey: lipstickResponse.apiKey,
+        isEnabled: tunnel.isEnabled,
         createdAt: tunnel.createdAt,
         updatedAt: tunnel.updatedAt
       }
@@ -151,6 +153,7 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
         id: newTunnel.id,
         domain: newTunnel.domain,
         apiKey: lipstickResponse.apiKey,
+        isEnabled: newTunnel.isEnabled,
         createdAt: newTunnel.createdAt,
         updatedAt: newTunnel.updatedAt
       }
@@ -192,6 +195,7 @@ tunnelsRouter.patch('/:id', validateSessionToken, async (req: RequestWithUser<{ 
     if (typeof allowMultipleConnections === 'boolean') {
       tunnel.allowMultipleConnections = allowMultipleConnections;
     }
+    console.log(tunnel.toJSON(), isEnabled);
 
     await tunnel.save({ transaction });
     await transaction.commit();

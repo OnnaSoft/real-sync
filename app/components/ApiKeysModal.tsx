@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Button } from "./ui/button";
 import {
   Dialog,
@@ -17,11 +16,11 @@ function ApiKeysModal({
   app,
   onCreateKey,
   onDeleteKey,
-}: {
+}: Readonly<{
   app: App;
   onCreateKey: () => void;
   onDeleteKey: (keyId: string) => void;
-}) {
+}>) {
   return (
     <Dialog>
       <DialogTrigger asChild>
