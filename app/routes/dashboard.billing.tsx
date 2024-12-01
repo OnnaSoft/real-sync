@@ -1,10 +1,10 @@
 import Billing from "~/components/Billing";
-import DashboardLayout from "~/components/Dashboard/DashboardLayout";
+import Dashboard from "~/components/Dashboard";
 
 export default function Page() {
   return (
-    <DashboardLayout>
+    <Dashboard>
       <Billing />
-    </DashboardLayout>
+    </Dashboard>
   )
 }

@@ -15,8 +15,6 @@ export const action: ActionFunction = async ({ request }) => {
   const email = formData.get("email");
   const message = formData.get("message");
 
-  // Here you would typically send an email or save to a database
-  // For this example, we'll just return a success message
   if (!name || !email || !message) {
     return { error: "All fields are required" };
   }

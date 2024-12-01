@@ -1,12 +1,12 @@
 import React from "react";
 import ApiDocs from "~/components/ApiDocs";
-import DashboardLayout from "~/components/Dashboard/DashboardLayout";
+import Dashboard from "~/components/Dashboard";
 
 const Page: React.FC = () => {
   return (
-    <DashboardLayout>
+    <Dashboard>
       <ApiDocs />
-    </DashboardLayout>
+    </Dashboard>
   )
 };
 

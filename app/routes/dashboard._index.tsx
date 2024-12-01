@@ -1,10 +1,14 @@
-import type { LoaderFunction } from "@remix-run/node";
-import { redirect } from "@remix-run/node";
+import { ClientOnly } from 'remix-utils/client-only';
+import Dashboard from "~/components/Dashboard";
+import DomainTrafficDashboard from "~/components/DomainTrafficDashboard";
 
-export const loader: LoaderFunction = async () => {
-  return redirect("/dashboard/tunnels");
-};
 
 export default function Index() {
-  return null;
+  return (
+    <Dashboard>
+      <ClientOnly fallback={<p>Loading charts...</p>}>
+        {() => <DomainTrafficDashboard />}
+      </ClientOnly>
+    </Dashboard>
+  );
 }

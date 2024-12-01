@@ -1,11 +1,11 @@
 
 import PaymentMethods from "~/components/PaymentMethods";
-import DashboardLayout from "~/components/Dashboard/DashboardLayout";
+import Dashboard from "~/components/Dashboard";
 
 export default function Page() {
   return (
-    <DashboardLayout>
+    <Dashboard>
       <PaymentMethods />
-    </DashboardLayout>
+    </Dashboard>
   )
 }

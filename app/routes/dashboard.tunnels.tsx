@@ -1,5 +1,5 @@
 import { useLoaderData } from "@remix-run/react";
-import DashboardLayout from "~/components/Dashboard/DashboardLayout";
+import Dashboard from "~/components/Dashboard";
 import Tunnels from "~/components/Tunnels";
 
 type LoaderData = {
@@ -20,8 +20,8 @@ export default function Page() {
   const { tunnelRootDomain } = useLoaderData<LoaderData>();
 
   return (
-    <DashboardLayout>
+    <Dashboard>
       <Tunnels tunnelRootDomain={tunnelRootDomain} />
-    </DashboardLayout>
+    </Dashboard>
   );
 }
