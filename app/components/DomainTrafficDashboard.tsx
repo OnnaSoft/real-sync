@@ -121,7 +121,7 @@ const Charts = () => {
 
   return (
     <>
-      <Card>
+      <Card className='bg-white'>
         <CardHeader>
           <CardTitle>Select Domain and Period</CardTitle>
           <CardDescription>Choose a domain and time period to view its traffic data</CardDescription>
@@ -133,7 +133,7 @@ const Charts = () => {
             </SelectTrigger>
             <SelectContent className="bg-white">
               {domains.map((domain) => (
-                <SelectItem key={domain} value={domain}>
+                <SelectItem key={domain} value={domain} className='cursor-pointer'>
                   {domain}
                 </SelectItem>
               ))}
@@ -145,7 +145,7 @@ const Charts = () => {
             </SelectTrigger>
             <SelectContent className="bg-white">
               {periods.map((period) => (
-                <SelectItem key={period.value} value={period.value}>
+                <SelectItem key={period.value} value={period.value} className='cursor-pointer'>
                   {period.label}
                 </SelectItem>
               ))}
@@ -154,7 +154,7 @@ const Charts = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className='bg-white'>
         <CardHeader>
           <CardTitle>Traffic Data</CardTitle>
           <CardDescription>Traffic data for the selected domain and period</CardDescription>
@@ -169,8 +169,8 @@ const Charts = () => {
 
 export default function DomainTrafficDashboard() {
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      <h1 className="text-2xl font-bold mb-4">Domain Traffic Dashboard</h1>
+    <div className="space-y-6">
+      <h2 className="text-3xl font-bold tracking-tight">Domain Traffic Dashboard</h2>
       <ClientOnly fallback={<p>Loading charts...</p>}>
         {() => <Charts />}
       </ClientOnly>
