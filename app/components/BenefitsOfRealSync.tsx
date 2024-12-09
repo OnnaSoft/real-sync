@@ -4,29 +4,29 @@ export default function BenefitsOfRealSync() {
   const benefits = [
     {
       icon: TrendingUp,
-      title: "Para CTOs y Gerentes de IT",
+      title: "For CTOs and IT Managers",
       items: [
-        "Escalabilidad mejorada de la infraestructura",
-        "Reducción significativa de costos operativos",
-        "Garantía de alta disponibilidad de servicios"
+        "Enhanced infrastructure scalability",
+        "Significant reduction in operational costs",
+        "Ensured high availability of services"
       ]
     },
     {
       icon: Code,
-      title: "Para Desarrolladores",
+      title: "For Developers",
       items: [
-        "Configuración sencilla y rápida",
-        "Compatibilidad con herramientas estándar de la industria",
-        "Reducción del tiempo de implementación"
+        "Quick and easy setup",
+        "Compatibility with industry-standard tools",
+        "Reduced implementation time"
       ]
     },
     {
       icon: Building,
-      title: "Para Empresas",
+      title: "For Businesses",
       items: [
-        "Mejora notable en la experiencia del usuario final",
-        "Protección robusta de datos sensibles",
-        "Aumento de la eficiencia operativa"
+        "Improved end-user experience",
+        "Robust protection of sensitive data",
+        "Increased operational efficiency"
       ]
     }
   ];
@@ -34,7 +34,9 @@ export default function BenefitsOfRealSync() {
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">Beneficios de Usar Real Sync</h2>
+        <h2 className="text-4xl font-extrabold text-center mb-12 bg-clip-text">
+          Benefits of Using Real Sync
+        </h2>
         <div className="grid gap-8 md:grid-cols-3">
           {benefits.map((benefit) => (
             <div key={benefit.title} className="bg-gray-50 rounded-lg shadow-lg overflow-hidden transition duration-300 ease-in-out hover:shadow-xl">

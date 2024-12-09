@@ -1,41 +1,48 @@
-import { Route, Shield, Cloud, Zap, Settings } from 'lucide-react';
+import { Route, Shield, Cloud, Zap, Settings, Globe } from 'lucide-react';
 
 export default function MainFeatures() {
   const features = [
     {
       icon: Route,
-      title: "Enrutamiento Avanzado",
-      description: "Redirección dinámica del tráfico a múltiples servidores para optimizar el rendimiento y la distribución de carga."
+      title: "Advanced Routing",
+      description: "Dynamic traffic redirection to multiple servers to optimize performance and load distribution."
     },
     {
       icon: Shield,
-      title: "Fallback Inteligente",
-      description: "Reenvío automático en caso de fallos del servidor, garantizando una alta disponibilidad y continuidad del servicio."
+      title: "Intelligent Fallback",
+      description: "Automatic rerouting in case of server failures, ensuring high availability and service continuity."
     },
     {
       icon: Cloud,
-      title: "Conectividad Híbrida",
-      description: "Integración perfecta entre infraestructuras en la nube y dispositivos locales, unificando tu ecosistema tecnológico."
+      title: "Hybrid Connectivity",
+      description: "Seamless integration between cloud infrastructures and local devices, unifying your technology ecosystem."
     },
     {
       icon: Settings,
-      title: "Fácil Configuración",
-      description: "Herramientas intuitivas para una implementación rápida y sencilla, reduciendo el tiempo y la complejidad de la configuración."
+      title: "Easy Configuration",
+      description: "Intuitive tools for quick and simple implementation, reducing setup time and complexity."
     },
     {
       icon: Zap,
-      title: "Seguridad Mejorada",
-      description: "Ocultación de servicios y túneles seguros para proteger tus datos y comunicaciones sin comprometer el rendimiento."
+      title: "Enhanced Security",
+      description: "Service obfuscation and secure tunnels to protect your data and communications without sacrificing performance."
+    },
+    {
+      icon: Globe,
+      title: "Global Scalability",
+      description: "Adaptable infrastructure capable of handling worldwide operations, supporting growth and expansion."
     }
   ];
 
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">Características Principales</h2>
+        <h2 className="text-4xl font-extrabold text-center mb-12 bg-clip-text">
+          Main Features
+        </h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
-            <div 
+            <div
               key={feature.title}
               className="bg-gray-50 rounded-lg shadow-md p-6 transition duration-300 ease-in-out hover:shadow-xl hover:bg-white"
             >

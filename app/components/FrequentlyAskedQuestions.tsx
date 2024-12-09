@@ -1,5 +1,7 @@
 import { MinusCircle, PlusCircle } from 'lucide-react';
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
 
 const FAQItem = ({
   question,
@@ -11,62 +13,95 @@ const FAQItem = ({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border-b border-muted">
-      <button
-        className="flex justify-between items-center w-full py-6 text-left"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span className="text-lg md:text-xl font-semibold text-foreground">
-          {question}
-        </span>
-        {isOpen ? (
-          <MinusCircle className="h-7 w-7 text-orange-500 dark:text-orange-400 flex-shrink-0" />
-        ) : (
-          <PlusCircle className="h-7 w-7 text-orange-500 dark:text-orange-400 flex-shrink-0" />
-        )}
-      </button>
-      {isOpen && (
-        <div className="pb-6">
-          <p className="text-lg leading-relaxed break-words text-rendering-optimizelegibility isolate break-word antialiased text-foreground">
-            {answer}
-          </p>
-        </div>
-      )}
-    </div>
+    <Card className="shadow-lg rounded-xl bg-white overflow-hidden transition-transform duration-300 hover:shadow-2xl">
+      <CardContent className="p-0">
+        <button
+          className="flex justify-between items-center w-full py-6 px-6 text-left transition duration-200 ease-in-out hover:bg-gray-50"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <span className="text-xl font-extrabold text-gray-800">
+            {question}
+          </span>
+          <motion.div
+            initial={false}
+            animate={{ rotate: isOpen ? 45 : 0 }}
+            transition={{ duration: 0.2 }}
+            className="bg-orange-100 rounded-full p-1"
+          >
+            {isOpen ? (
+              <MinusCircle className="h-8 w-8 text-orange-500 dark:text-orange-400" />
+            ) : (
+              <PlusCircle className="h-8 w-8 text-orange-500 dark:text-orange-400" />
+            )}
+          </motion.div>
+        </button>
+        <AnimatePresence initial={false}>
+          {isOpen && (
+            <motion.div
+              initial="collapsed"
+              animate="open"
+              exit="collapsed"
+              variants={{
+                open: { opacity: 1, height: "auto" },
+                collapsed: { opacity: 0, height: 0 },
+              }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="px-6 pb-6">
+                <p className="leading-relaxed text-gray-600">
+                  {answer}
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </CardContent>
+    </Card>
   );
 };
 
 export default function FrequentlyAskedQuestions() {
   return (
-    <section id="faq" className="py-20 bg-gray-50">
+    <section id="faq" className="py-20 bg-gray-50 relative">
       <div className="container mx-auto px-4 max-w-6xl">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">
-          Preguntas Frecuentes
+        <h2 className="text-4xl font-extrabold text-center mb-12 bg-clip-text">
+          Frequently Asked Questions
         </h2>
         <div className="space-y-6">
           <FAQItem
-            question="¿Real Sync funciona en entornos híbridos?"
-            answer="Sí, Real Sync está diseñado específicamente para integrarse sin problemas en entornos híbridos, conectando aplicaciones y servicios en la nube con infraestructura local. Esta capacidad garantiza una experiencia fluida y eficiente, independientemente de dónde se encuentren tus sistemas. Real Sync proporciona una solución versátil que se adapta a las necesidades de las empresas modernas, permitiendo una gestión unificada de recursos distribuidos."
+            question="Does Real Sync work in hybrid environments?"
+            answer="Yes, Real Sync is specifically designed to integrate seamlessly into hybrid environments, connecting cloud applications and services with local infrastructure. This capability ensures a smooth and efficient experience, regardless of where your systems are located."
           />
           <FAQItem
-            question="¿Cómo se configuran los túneles seguros en Real Sync?"
-            answer="Configurar túneles seguros en Real Sync es un proceso sencillo e intuitivo. A través de nuestra interfaz de usuario o línea de comandos, puedes definir los endpoints, establecer reglas de acceso y activar el cifrado. Nuestro equipo también proporciona documentación detallada y soporte para ayudarte durante la implementación. Además, ofrecemos plantillas predefinidas para casos de uso comunes, lo que acelera el proceso de configuración y reduce la posibilidad de errores."
+            question="How are secure tunnels configured in Real Sync?"
+            answer="Configuring secure tunnels in Real Sync is a simple and intuitive process. Through our user interface or command line, you can define endpoints, set access rules, and enable encryption. Additionally, we provide predefined templates to accelerate the setup."
           />
           <FAQItem
-            question="¿Qué requisitos técnicos tiene Real Sync?"
-            answer="Real Sync es compatible con la mayoría de los entornos modernos. Los requisitos técnicos incluyen: servidor Linux o Windows con capacidad para ejecutar aplicaciones de red, acceso a internet para comunicación entre servidores, recursos mínimos de CPU de 2 núcleos, 4 GB de RAM, y 20 GB de almacenamiento. Opcionalmente, se puede integrar con servicios en la nube como AWS, Google Cloud, o Azure para entornos híbridos. Nuestro equipo de soporte está disponible para ayudarte a evaluar la compatibilidad con tu infraestructura específica y realizar los ajustes necesarios para una implementación exitosa."
+            question="What are the technical requirements for Real Sync?"
+            answer="Real Sync is compatible with most modern environments. It requires a Linux or Windows server, internet access, at least 2 CPU cores, 4 GB of RAM, and 20 GB of storage. It can also integrate with cloud services such as AWS, Google Cloud, or Azure."
           />
           <FAQItem
-            question="¿Real Sync reemplaza a las VPNs tradicionales?"
-            answer="En muchos casos, sí. Real Sync ofrece capacidades avanzadas que eliminan la necesidad de VPNs tradicionales para tareas específicas, como conectar servidores locales a aplicaciones en la nube o acceder a servicios internos de forma segura. Sin embargo, para conexiones generales de red, ambas soluciones pueden coexistir según las necesidades de tu empresa. Real Sync proporciona una mayor flexibilidad, rendimiento y facilidad de gestión en comparación con las VPNs tradicionales, especialmente en entornos complejos o de gran escala."
+            question="Does Real Sync replace traditional VPNs?"
+            answer="In many cases, yes. Real Sync eliminates the need for traditional VPNs to connect local servers to the cloud or securely access internal services, offering superior flexibility and performance."
           />
           <FAQItem
-            question="¿Qué tipo de soporte técnico ofrece Real Sync?"
-            answer="En Real Sync, ofrecemos un soporte técnico integral para asegurar el éxito de tu implementación y uso continuo. Nuestro equipo está disponible para ayudarte en todas las etapas, desde la planificación inicial y la implementación hasta la resolución de problemas y la optimización continua. Ofrecemos soporte técnico por correo electrónico, chat en vivo y llamadas telefónicas, dependiendo de tu plan de servicio. Además, proporcionamos una extensa base de conocimientos, tutoriales en video y webinars regulares para ayudarte a aprovechar al máximo las capacidades de Real Sync. Para clientes empresariales, ofrecemos opciones de soporte premium con tiempos de respuesta garantizados y un gestor de cuenta dedicado."
+            question="What kind of technical support does Real Sync offer?"
+            answer="Real Sync offers comprehensive support at all stages: planning, implementation, and optimization. We provide support via email, live chat, and phone, as well as a knowledge base and tutorials."
+          />
+          <FAQItem
+            question="Does Real Sync improve network security?"
+            answer="Yes, Real Sync implements encrypted tunnels and hides internal services, significantly reducing the risk of unauthorized access. This makes it an ideal solution for protecting critical data."
+          />
+          <FAQItem
+            question="What advantages does Real Sync have over other solutions?"
+            answer="Real Sync combines ease of use with advanced capabilities like dynamic load balancing, automatic fallback, and scalability. It's ideal for businesses looking to optimize their connectivity infrastructure."
+          />
+          <FAQItem
+            question="Can Real Sync be customized for specific needs?"
+            answer="Yes, Real Sync offers customization options to meet your company's requirements. Our support team can help you implement advanced configurations."
           />
         </div>
       </div>
     </section>
   );
 }
-

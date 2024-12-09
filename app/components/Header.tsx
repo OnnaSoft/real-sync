@@ -30,8 +30,6 @@ export default function Header() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/features" className="text-gray-600 hover:text-blue-600 transition duration-300">Features</Link>
-          <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition duration-300">Pricing</Link>
           <Link to="/about" className="text-gray-600 hover:text-blue-600 transition duration-300">About</Link>
           <Link to="/login" className="text-gray-600 hover:text-blue-600 transition duration-300">Log In</Link>
           <Link to="/register" className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300">Sign Up</Link>

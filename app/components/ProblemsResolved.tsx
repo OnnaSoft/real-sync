@@ -4,28 +4,30 @@ export default function ProblemsResolved() {
   const problems = [
     {
       icon: Server,
-      title: "Downtime y fallos en servidores",
-      description: "Evita interrupciones en el servicio y mantén tu negocio en funcionamiento continuo."
+      title: "Downtime and Server Failures",
+      description: "Avoid service interruptions and keep your business running continuously."
     },
     {
       icon: Cloud,
-      title: "Integración compleja de infraestructuras híbridas",
-      description: "Simplifica la conexión entre tus sistemas locales y en la nube."
+      title: "Complex Hybrid Infrastructure Integration",
+      description: "Simplify the connection between your local systems and the cloud."
     },
     {
       icon: Lock,
-      title: "Dependencia de VPNs para conectividad segura",
-      description: "Obtén una conectividad segura sin la complejidad de las VPNs tradicionales."
+      title: "Dependence on VPNs for Secure Connectivity",
+      description: "Achieve secure connectivity without the complexity of traditional VPNs."
     }
   ];
 
   return (
     <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-900">Problemas que Real Sync Resuelve</h2>
+        <h2 className="text-4xl font-extrabold text-center mb-12 bg-clip-text">
+          Problems Solved by Real Sync
+        </h2>
         <div className="grid md:grid-cols-3 gap-8">
           {problems.map((problem) => (
-            <div 
+            <div
               key={problem.title}
               className="bg-white rounded-lg shadow-lg p-6 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl"
             >
