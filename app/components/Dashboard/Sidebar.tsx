@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ hasPaymentMethod }) => {
       </div>
       <nav className="flex-1 overflow-y-auto p-2 space-y-1">{renderNavigation()}</nav>
       <div className="p-4 border-t border-gray-200">
-        <p className="text-xs text-gray-500">© 2023 RealSync</p>
+        <p className="text-xs text-gray-500">© {new Date().getFullYear()} RealSync</p>
       </div>
     </aside>
   );

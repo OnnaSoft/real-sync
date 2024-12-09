@@ -28,7 +28,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 pt-8 border-t border-gray-700 text-center text-sm text-gray-400">
-          <p>&copy; 2023 RealSync. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} RealSync. All rights reserved.</p>
         </div>
       </div>
     </footer>

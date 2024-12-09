@@ -99,6 +99,18 @@ export default function Plans() {
             />
           ))}
         </div>
+
+        <div className="mt-12 text-center">
+          <p className="text-lg text-gray-600 mb-4">
+            Not sure which plan is right for you? Contact our sales team for a personalized recommendation.
+          </p>
+          <a
+            href="/contact"
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300"
+          >
+            Contact Sales
+          </a>
+        </div>
       </div>
     </section>
   );
