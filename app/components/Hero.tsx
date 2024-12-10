@@ -4,7 +4,7 @@ import imgSrc from '~/assets/iStock-1341712012-removebg-preview.png';
 
 export default function Hero() {
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-100">
+    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-blue-50">
       <div className="max-w-6xl mx-auto">
         <div className="text-center lg:text-left lg:flex lg:items-center lg:justify-between">
           <div className="lg:max-w-2xl">

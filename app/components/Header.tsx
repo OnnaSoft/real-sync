@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "@remix-run/react";
 import { Menu, X } from 'lucide-react';
 
+const aboutUrl = "https://onnasoft.us/"
+
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -28,14 +30,12 @@ export default function Header() {
           <span className="text-2xl font-bold text-blue-600">RealSync</span>
         </Link>
 
-        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-6">
-          <Link to="/about" className="text-gray-600 hover:text-blue-600 transition duration-300">About</Link>
+          <Link to={aboutUrl} className="text-gray-600 hover:text-blue-600 transition duration-300">About</Link>
           <Link to="/login" className="text-gray-600 hover:text-blue-600 transition duration-300">Log In</Link>
           <Link to="/register" className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300">Sign Up</Link>
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden text-gray-600 hover:text-blue-600 transition duration-300"
           onClick={toggleMenu}
@@ -45,13 +45,10 @@ export default function Header() {
         </button>
       </nav>
 
-      {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden mt-4 bg-white border-t border-gray-200">
           <div className="flex flex-col space-y-4 p-4">
-            <Link to="/features" className="text-gray-600 hover:text-blue-600 transition duration-300">Features</Link>
-            <Link to="/pricing" className="text-gray-600 hover:text-blue-600 transition duration-300">Pricing</Link>
-            <Link to="/about" className="text-gray-600 hover:text-blue-600 transition duration-300">About</Link>
+            <Link to={aboutUrl} className="text-gray-600 hover:text-blue-600 transition duration-300">About</Link>
             <Link to="/login" className="text-gray-600 hover:text-blue-600 transition duration-300">Log In</Link>
             <Link to="/register" className="bg-blue-600 text-white px-4 py-2 rounded-full hover:bg-blue-700 transition duration-300 text-center">Sign Up</Link>
           </div>
