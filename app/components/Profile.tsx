@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
 import useFetch from "@/hooks/useFetch";
@@ -11,8 +11,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 
 export interface User {
   id: number;
@@ -20,7 +23,8 @@ export interface User {
   email: string;
   fullname: string;
   stripeCustomerId: string;
-  userSubscription: any[]; // This is an empty array in the example, so we'll use 'any[]' for now
+  userSubscription: any[];
+  avatarUrl?: string;
 }
 
 export interface CurrentPlan {
@@ -37,6 +41,7 @@ export interface Profile {
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Partial<User>>({});
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const token = useAppSelector((state) => state.auth.token);
@@ -61,13 +66,21 @@ export default function Profile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (updatedUser: Partial<User>) => {
+      const formData = new FormData();
+      Object.entries(updatedUser).forEach(([key, value]) => {
+        if (value !== undefined) {
+          formData.append(key, value.toString());
+        }
+      });
+      if (avatarFile) {
+        formData.append('avatar', avatarFile);
+      }
       const response = await fetch("/users/profile", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(updatedUser),
+        body: formData,
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -78,6 +91,7 @@ export default function Profile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       setIsEditing(false);
+      setAvatarFile(null);
       toast({
         title: "Profile updated successfully",
         description: "Your profile information has been updated.",
@@ -92,28 +106,59 @@ export default function Profile() {
     },
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleAvatarChange = useCallback((file: File) => {
+    setAvatarFile(file);
+  }, []);
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     updateProfileMutation.mutate(formData);
-  };
+  }, [formData, updateProfileMutation]);
 
   if (isLoading) {
     return <div>Loading profile...</div>;
   }
 
   if (error) {
-    return <div>Error loading profile. Please try again.</div>;
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          Failed to load profile. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   if (!profile) {
-    return <div>No profile found. Please try again later.</div>;
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>
+          No profile found. Please try again later.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   const { user } = profile;
+
+  const renderProfileField = (label: string, value: string, fieldName: keyof User) => (
+    <div className="space-y-2">
+      <Label htmlFor={fieldName}>{label}</Label>
+      <Input
+        id={fieldName}
+        name={fieldName}
+        defaultValue={value}
+        onChange={handleInputChange}
+        disabled={!isEditing}
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -125,65 +170,59 @@ export default function Profile() {
           <CardDescription>View and update your profile details</CardDescription>
         </CardHeader>
         <CardContent>
-          {isEditing ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              {renderProfileField("Username", user.username, "username")}
+              {renderProfileField("Email", user.email, "email")}
+              {renderProfileField("Full Name", user.fullname, "fullname")}
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="stripeCustomerId">Stripe Customer ID</Label>
                 <Input
-                  id="username"
-                  name="username"
-                  defaultValue={user.username}
-                  onChange={handleInputChange}
+                  id="stripeCustomerId"
+                  value={user.stripeCustomerId}
+                  disabled
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="paymentMethod">Payment Method</Label>
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  defaultValue={user.email}
-                  onChange={handleInputChange}
+                  id="paymentMethod"
+                  value={profile.hasPaymentMethod ? "Added" : "Not added"}
+                  disabled
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="fullname">Full Name</Label>
-                <Input
-                  id="fullname"
-                  name="fullname"
-                  defaultValue={user.fullname}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={updateProfileMutation.isPending}
-                >
-                  {updateProfileMutation.isPending ? "Updating..." : "Save Changes"}
-                </Button>
-              </div>
-            </form>
-          ) : (
-            <div className="space-y-2">
-              <p><strong>Username:</strong> {user.username}</p>
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>Full Name:</strong> {user.fullname}</p>
-              <p><strong>Stripe Customer ID:</strong> {user.stripeCustomerId}</p>
-              <p><strong>Has Payment Method:</strong> {profile.hasPaymentMethod ? "Yes" : "No"}</p>
-              <Button onClick={() => setIsEditing(true)} className="mt-4">
-                Edit Profile
-              </Button>
             </div>
-          )}
+            <ProfileAvatar
+              avatarUrl={user.avatarUrl}
+              fullname={user.fullname}
+              isEditing={isEditing}
+              onAvatarChange={handleAvatarChange}
+            />
+          </form>
         </CardContent>
+        <CardFooter className="flex justify-end space-x-2">
+          {isEditing ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={updateProfileMutation.isPending}
+              >
+                {updateProfileMutation.isPending ? "Updating..." : "Save Changes"}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => setIsEditing(true)}>
+              Edit Profile
+            </Button>
+          )}
+        </CardFooter>
       </Card>
     </div>
   );
