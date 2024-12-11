@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "@remix-run/react";
 import { Button } from "@/components/ui/button";
-import { Server, CreditCard, Receipt, Book, Home } from 'lucide-react';
+import { Server, CreditCard, Receipt, Home } from 'lucide-react';
 
 interface SidebarProps {
   hasPaymentMethod: boolean;
