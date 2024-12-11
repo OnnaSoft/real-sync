@@ -12,12 +12,12 @@ export interface TunnelConsumptionAttributes {
 
 export interface TunnelConsumptionCreationAttributes extends Omit<TunnelConsumptionAttributes, "id" | "createdAt" | "updatedAt"> { }
 
-interface TunnelConsumptionInstance extends Model<TunnelConsumptionAttributes, TunnelConsumptionCreationAttributes>, TunnelConsumptionAttributes {
+export interface TunnelConsumptionInstance extends Model<TunnelConsumptionAttributes, TunnelConsumptionCreationAttributes>, TunnelConsumptionAttributes {
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface TunnelConsumptionModel extends ModelStatic<TunnelConsumptionInstance> {
+export interface TunnelConsumptionModel extends ModelStatic<TunnelConsumptionInstance> {
   associate: (models: { [key: string]: ModelStatic<Model> }) => void;
 }
 

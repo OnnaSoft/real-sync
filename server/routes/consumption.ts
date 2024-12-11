@@ -2,10 +2,66 @@ import express, { Request, Response, NextFunction } from "express";
 import * as core from "express-serve-static-core";
 import { HttpError } from "http-errors-enhanced";
 import { validateRequest } from "&/middlewares/validateRequest";
-import stripe from "&/lib/stripe";
 import { Tunnel, TunnelConsumption, UserSubscription } from "&/db";
-import Joi from "joi";
 import validateApiKey from "&/middlewares/validateApiKey";
+import validateSessionToken, { RequestWithUser } from "&/middlewares/validateSessionToken";
+import stripe from "&/lib/stripe";
+import Joi from "joi";
+
+const consumptionRouter = express.Router();
+
+consumptionRouter.get("/",
+  validateSessionToken,
+  async (req: RequestWithUser, res: Response, next: NextFunction) => {
+    try {
+      const { user } = req;
+      if (!user) {
+        throw new HttpError(401, "Unauthorized");
+      }
+
+      if (!user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const tunnels = await Tunnel.findAll({
+        attributes: ["domain"],
+        where: {
+          userId: user.id
+        },
+        include: [
+          {
+            model: TunnelConsumption,
+            as: "consumptions",
+            attributes: ["year", "month", "dataUsage"],
+            order: [["year", "DESC"], ["month", "DESC"]],
+            limit: 12,
+          },
+        ],
+      });
+
+      const response = tunnels.map((tunnel) => {
+        const tunnelData = tunnel.toJSON();
+        const consumptions = tunnelData.consumptions?.map((consumption: any) => {
+          return {
+            year: consumption.year,
+            month: consumption.month,
+            dataUsage: consumption.dataUsage,
+          };
+        });
+
+        return {
+          domain: tunnelData.domain,
+          consumptions,
+        };
+      })
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  })
+
 
 export const updateConsumptionSchema = Joi.object({
   domain: Joi.string().required().messages({
@@ -45,8 +101,6 @@ export interface UpdateConsumptionRequest {
 export interface UpdateConsumptionResponse {
   message: string;
 }
-
-const consumptionRouter = express.Router();
 
 consumptionRouter.post(
   "/update-consumption",

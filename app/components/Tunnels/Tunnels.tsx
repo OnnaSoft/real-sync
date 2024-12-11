@@ -34,7 +34,6 @@ export default function Tunnels({ tunnelRootDomain }: TunnelsProps) {
         throw new Error('Failed to fetch tunnels');
       }
       const { data }: GetTunnelsResponse = await response.json();
-      console.log(data);
       setTunnels(data);
     } catch (error) {
       console.error("Error fetching tunnels:", error);

@@ -1,4 +1,5 @@
 import { DataTypes, Model, Sequelize, ModelStatic } from "sequelize";
+import { TunnelConsumptionAttributes } from "./TunnelConsumption";
 
 export interface TunnelAttributes {
   id: number;
@@ -8,6 +9,7 @@ export interface TunnelAttributes {
   isEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
+  consumptions?: Array<TunnelConsumptionAttributes>
 }
 
 export interface TunnelCreationAttributes extends Omit<TunnelAttributes, "id" | "createdAt" | "updatedAt"> {}
@@ -87,6 +89,10 @@ const TunnelModel = (sequelize: Sequelize): TunnelModel => {
 
   Tunnel.associate = (models: { [key: string]: ModelStatic<Model> }) => {
     Tunnel.belongsTo(models.User, { foreignKey: "userId" });
+    Tunnel.hasMany(models.TunnelConsumption, { 
+      foreignKey: "tunnelId",
+      as: "consumptions",
+    });
   };
 
   return Tunnel;
