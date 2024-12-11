@@ -10,12 +10,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAppDispatch } from "~/store/hooks";
+import { logout } from "~/store/slices/authSlice";
 
 interface HeaderProps {
   username: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({ username }) => {
+  const dispatch = useAppDispatch();
+  const handleLogout = () => {
+    dispatch(logout());
+  }
+
+
   return (
     <header className="bg-blue-600 border-b border-blue-700 px-4 lg:px-6 h-14 flex items-center justify-between">
       <div className="flex items-center space-x-4">
@@ -51,10 +59,10 @@ export const Header: React.FC<HeaderProps> = ({ username }) => {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/logout" className="flex items-center cursor-pointer text-red-500 hover:text-red-600">
+              <button onClick={handleLogout} className="flex items-center cursor-pointer text-red-500 hover:text-red-600 w-full">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
-              </Link>
+              </button>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

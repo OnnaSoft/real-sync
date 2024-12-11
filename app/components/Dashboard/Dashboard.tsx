@@ -39,10 +39,11 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
     };
   }, [refetchUserProfile]);
 
-  if (!auth.isAuthenticated) {
-    navigate("/login");
-    return null;
-  }
+  useEffect(() => {
+    if (!auth.isAuthenticated) {
+      navigate("/login");
+    }
+  }, [auth.isAuthenticated, navigate]);
 
   if (isLoadingProfile) {
     return (

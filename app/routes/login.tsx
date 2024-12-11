@@ -97,15 +97,6 @@ export default function LoginPage() {
                   </div>
                 </div>
               )}
-              {mutation.isSuccess && (
-                <div
-                  className="flex items-center p-4 mb-4 text-sm text-green-800 border border-green-300 rounded-lg bg-green-50"
-                  role="alert"
-                >
-                  <span className="font-medium">Success:</span> You have
-                  successfully logged in.
-                </div>
-              )}
               <div>
                 <Label htmlFor="username">Username or email</Label>
                 <Input type="text" id="username" name="username" />

@@ -31,10 +31,6 @@ function AppContent() {
 }
 
 export default function App() {
-  const [isClient, setIsClient] = React.useState(false);
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   return (
     <html lang="en">
@@ -45,14 +41,12 @@ export default function App() {
         <Links />
       </head>
       <body>
-        {isClient && (
-          <Provider store={store}>
-            <StripeProvider>
-              <Toaster />
-              <AppContent />
-            </StripeProvider>
-          </Provider>
-        )}
+        <Provider store={store}>
+          <StripeProvider>
+            <Toaster />
+            <AppContent />
+          </StripeProvider>
+        </Provider>
         <Scripts />
       </body>
     </html>
