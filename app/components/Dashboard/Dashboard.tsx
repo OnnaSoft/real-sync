@@ -75,9 +75,9 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
       </div>
 
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Header username={auth.user?.fullname || ""} />
+        <Header username={auth.user?.fullname ?? ""} />
 
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6">
+        <main className="flex flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6">
           <div className="container mx-auto">
             {children}
           </div>
@@ -100,9 +100,10 @@ const Dashboard: React.FC<React.PropsWithChildren> = ({ children }) => {
       </Button>
 
       {sidebarOpen && (
-        <div 
+        <button 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" 
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close sidebar"
         />
       )}
     </div>

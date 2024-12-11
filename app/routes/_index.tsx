@@ -11,14 +11,28 @@ import BenefitsOfRealSync from "~/components/BenefitsOfRealSync";
 import TestimonialsAndCaseStudies from "~/components/TestimonialsAndCaseStudies";
 import ComparisonTable from "~/components/ComparisonTable";
 import FrequentlyAskedQuestions from "~/components/FrequentlyAskedQuestions";
+import { useLoaderData } from "@remix-run/react";
+
+type LoaderData = {
+  discoverUrl: string;
+  onnasoftContactUrl: string;
+}
+
+export const loader = () => {
+  return Response.json({
+    discoverUrl: process.env.DISCOVER_URL ?? "",
+    onnasoftContactUrl: process.env.ONNASOFT_CONTACT_URL ?? ""
+  } satisfies LoaderData) as any as LoaderData;
+}
 
 export default function IndexPage() {
+  const { discoverUrl, onnasoftContactUrl } = useLoaderData<LoaderData>();
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="flex flex-col min-h-screen">
       <Header />
 
       <main className="flex-grow">
-        <Hero />
+        <Hero discoverUrl={discoverUrl} onnasoftContactUrl={onnasoftContactUrl} />
 
         <WhatIsRealSync />
 

@@ -1,5 +1,4 @@
-import React from "react";
-import { Form, useActionData } from "@remix-run/react";
+import { Form, useActionData, useLoaderData } from "@remix-run/react";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, Mail, Phone, MapPin } from "lucide-react";
 import type { ActionFunction } from "@remix-run/node";
+
+export const loader = async () => {
+  const response = {
+    title: "Contact Us",
+    description: "Contact us for any question or feedback.",
+    contactEmail: process.env.CONTACT_EMAIL,
+    contactWhatsApp: process.env.CONTACT_WHATSAPP,
+    contactWhatsappLink: process.env.CONTACT_WHATSAPP_LINK,
+
+    linkedIn: process.env.LINKEDIN_URL,
+    github: process.env.GITHUB_URL,
+    business: process.env.BUSINESS_URL,
+  };
+  return Response.json(response) as any as typeof response;
+}
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
@@ -29,9 +43,10 @@ interface ActionData {
 
 export default function ContactPage() {
   const actionData = useActionData<ActionData>();
+  const { contactEmail, contactWhatsApp, contactWhatsappLink, linkedIn, github, business } = useLoaderData<typeof loader>();
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen ">
       <Header />
 
       <main className="flex-grow py-12 md:py-20">
@@ -79,14 +94,28 @@ export default function ContactPage() {
                   <Mail className="w-6 h-6 text-blue-600 mr-3 mt-1" />
                   <div>
                     <h3 className="font-semibold">Email</h3>
-                    <p>xtorresm@icloud.com</p>
+                    <p>
+                      <a
+                        href={`mailto:${contactEmail}`}
+                        className="text-blue-600 hover:text-blue-800">
+                        {contactEmail}
+                      </a>
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <Phone className="w-6 h-6 text-blue-600 mr-3 mt-1" />
                   <div>
-                    <h3 className="font-semibold">Phone</h3>
-                    <p>(+57) 312 374 9187</p>
+                    <h3 className="font-semibold">WhatsApp</h3>
+                    <p>
+                      <a
+                        href={contactWhatsappLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800">
+                        {contactWhatsApp}
+                      </a>
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -101,9 +130,9 @@ export default function ContactPage() {
               <div className="mt-8">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">Follow us</h3>
                 <div className="flex space-x-4">
-                  <a href="https://www.linkedin.com/in/julio-cesar-torres-moreno" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">LinkedIn</a>
-                  <a href="https://github.com/juliotorresmoreno" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">GitHub</a>
-                  <a href="https://juliotorres.digital/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">Website</a>
+                  <a href={linkedIn} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">LinkedIn</a>
+                  <a href={github} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">GitHub</a>
+                  <a href={business} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">Website</a>
                 </div>
               </div>
             </div>

@@ -9,7 +9,7 @@ import { DomainConsumption } from '~/models/tunnel';
 import { useAppSelector } from '~/store/hooks';
 
 export default function DomainTrafficDashboard() {
-  const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<string>("All Domains");
   const [data, setData] = useState<DomainConsumption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,32 +55,51 @@ export default function DomainTrafficDashboard() {
     );
   }
 
-  const domains = data.map(item => item.domain);
-  const selectedData = data.find(item => item.domain === selectedDomain);
+  const domains = ["All Domains", ...data.map(item => item.domain)];
 
   const chartData = Array.from({ length: 12 }, (_, index) => {
     const month = index + 1;
     const year = new Date().getFullYear();
-    const consumption = selectedData?.consumptions.find(
-      c => c.year === year && c.month === month
-    );
+    let totalUsage = 0;
+
+    if (selectedDomain === "All Domains") {
+      data.forEach(domain => {
+        const consumption = domain.consumptions.find(
+          c => c.year === year && c.month === month
+        );
+        if (consumption) {
+          totalUsage += parseInt(consumption.dataUsage, 10);
+        }
+      });
+    } else {
+      const selectedDataItem = data.find(item => item.domain === selectedDomain);
+      const consumption = selectedDataItem?.consumptions.find(
+        c => c.year === year && c.month === month
+      );
+      if (consumption) {
+        totalUsage = parseInt(consumption.dataUsage, 10);
+      }
+    }
+
     return {
       month: `${year}-${month.toString().padStart(2, '0')}`,
-      dataUsage: consumption
-        ? parseInt(consumption.dataUsage, 10) / 1024 / 1024 / 1024
-        : 0, // Convert to GB or use 0 if no data
+      dataUsage: totalUsage / 1024 / 1024 / 1024, // Convert to GB
     };
   });
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <CardTitle>Domain Traffic Dashboard</CardTitle>
+        <CardTitle>
+          {selectedDomain === "All Domains"
+            ? "All Domains Traffic Dashboard"
+            : `Domain Traffic Dashboard: ${selectedDomain}`}
+        </CardTitle>
         <CardDescription>View traffic data for your domains</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className='flex flex-1 flex-col'>
         <div className="mb-6">
-          <Select onValueChange={(value) => setSelectedDomain(value)}>
+          <Select onValueChange={(value) => setSelectedDomain(value)} defaultValue="All Domains">
             <SelectTrigger className="bg-white cursor-pointer">
               <SelectValue placeholder="Select a domain" />
             </SelectTrigger>
@@ -95,23 +114,29 @@ export default function DomainTrafficDashboard() {
           config={{
             dataUsage: {
               label: "Data Usage (GB)",
+              color: "#2563eb",
               icon: BarChart3,
             },
           }}
-          className="h-[450px] w-full"
+          className="max-h-[450px] flex-1"
         >
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="month" 
-                tickFormatter={(value) => value.split('-')[1]}
+              <XAxis
+                dataKey="month"
+                tickFormatter={(value) => {
+                  const [year, month] = value.split('-');
+                  return `${month}/${year.slice(2)}`;
+                }}
               />
-              <YAxis />
+              <YAxis
+                tickFormatter={(value) => `${value} GB`}
+              />
               <ChartTooltip content={<ChartTooltipContent className='bg-white' />} />
-              <Bar 
-                dataKey="dataUsage" 
-                fill="#2563EB"
+              <Bar
+                dataKey="dataUsage"
+                fill="#2563eb"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
@@ -121,3 +146,4 @@ export default function DomainTrafficDashboard() {
     </Card>
   );
 }
+

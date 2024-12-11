@@ -198,8 +198,6 @@ export default function ActivePlan() {
     return <div>No plans available. Please try again later.</div>;
   }
 
-  console.log(typeof plans, plans)
-
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Active Plan</h2>

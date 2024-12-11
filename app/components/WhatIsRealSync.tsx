@@ -1,5 +1,5 @@
 import { ArrowRight } from 'lucide-react';
-import imgSrc from '@/assets/iStock-2155769551.jpg';
+import imgSrc from '@/assets/iStock-1269672263.jpg';
 
 export default function WhatIsRealSync() {
   return (

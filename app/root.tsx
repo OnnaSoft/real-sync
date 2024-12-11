@@ -8,7 +8,6 @@ import {
   Scripts,
   useRouteError,
 } from "@remix-run/react";
-// @ts-ignore
 import stylesheet from "./tailwind.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -38,7 +37,7 @@ export default function App() {
   }, []);
 
   return (
-    <html>
+    <html lang="en">
       <head>
         <link rel="icon" href="data:image/x-icon;base64,AA" />
         <Meta />
@@ -60,7 +59,6 @@ export default function App() {
   );
 }
 
-("use client");
 export function ErrorBoundary() {
   const [isClient, setIsClient] = React.useState(false);
   React.useEffect(() => {

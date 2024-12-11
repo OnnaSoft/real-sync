@@ -36,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ hasPaymentMethod }) => {
       { path: '/dashboard/plan', icon: CreditCard, label: 'Active Plan' },
       { path: '/dashboard/billing', icon: Receipt, label: 'Billing History' },
       { path: '/dashboard/payment-methods', icon: CreditCard, label: 'Payment Methods' },
-      { path: '/dashboard/api-docs', icon: Book, label: 'API Documentation' },
     ];
 
     return (
