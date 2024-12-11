@@ -1,9 +1,11 @@
 import express, { Request, Response, NextFunction } from "express";
+import * as core from "express-serve-static-core";
 import { HttpError } from "http-errors-enhanced";
 import { validateRequest } from "&/middlewares/validateRequest";
 import stripe from "&/lib/stripe";
 import { Tunnel, TunnelConsumption, UserSubscription } from "&/db";
 import Joi from "joi";
+import validateApiKey from "&/middlewares/validateApiKey";
 
 export const updateConsumptionSchema = Joi.object({
   domain: Joi.string().required().messages({
@@ -48,9 +50,9 @@ const consumptionRouter = express.Router();
 
 consumptionRouter.post(
   "/update-consumption",
-  // @ts-expect-error - Falta definir el tipo de req, res y next
+  validateApiKey,
   validateRequest(updateConsumptionSchema),
-  async (req: Request<{}, {}, UpdateConsumptionRequest>, res: Response<UpdateConsumptionResponse>, next: NextFunction) => {
+  async (req: Request<core.ParamsDictionary, any, UpdateConsumptionRequest>, res: Response<UpdateConsumptionResponse>, next: NextFunction) => {
     try {
       const { domain, dataUsage: _dataUsage, month, year } = req.body;
 

@@ -26,7 +26,7 @@ export interface RequestWithUser<
 
 const validateSessionToken = (req: RequestWithUser, res: Response, next: NextFunction): void => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
 
   if (token == null) {
     res.status(401).json({ error: 'No token provided' });

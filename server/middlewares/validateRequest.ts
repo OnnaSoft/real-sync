@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { ParamsDictionary } from "express-serve-static-core";
 import { ObjectSchema } from "joi";
 
 /**
@@ -6,15 +7,20 @@ import { ObjectSchema } from "joi";
  * 
  * @param schema - Esquema de Joi para validar el cuerpo de la solicitud
  */
-export function validateRequest<T>(
+export function validateRequest<T extends object>(
   schema: ObjectSchema<T>
 ) {
-  return (req: Request<{}, {}, T>, res: Response<{ errors: string[] }>, next: NextFunction) => {
+  return (
+    req: Request<ParamsDictionary, any, T>,
+    res: Response<{ errors: string[] }>,
+    next: NextFunction
+  ) => {
     const { error } = schema.validate(req.body, { abortEarly: false });
 
     if (error) {
       const errors = error.details.map((detail) => detail.message);
-      return res.status(400).json({ errors });
+      res.status(400).json({ errors });
+      return;
     }
 
     next();
