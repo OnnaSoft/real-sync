@@ -1,10 +1,10 @@
 import express, { Response, NextFunction } from "express";
-import validateSessionToken from "../middlewares/validateSessionToken";
+import validateSessionToken from "&/middlewares/validateSessionToken";
 import { UserSubscription, Plan, User } from "../db";
 import { Op } from "sequelize";
-import stripe from "../lib/stripe";
+import stripe from "&/lib/stripe";
 import { HttpError } from "http-errors-enhanced";
-import { RequestWithSession } from "../types/http";
+import { RequestWithSession } from "&/types/http";
 import addPaymentMethodInfo, { RequestWithUserAndPayment } from "server/middlewares/addPaymentMethodInfo";
 
 const usersRouter = express.Router();
