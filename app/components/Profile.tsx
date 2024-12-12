@@ -16,27 +16,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
+import type { User } from "@/models/user";
+import type { Profile } from "@/models/profile";
 
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  fullname: string;
-  stripeCustomerId: string;
-  userSubscription: any[];
-  avatarUrl?: string;
-}
-
-export interface CurrentPlan {
-  // Add properties for CurrentPlan if needed
-}
-
-export interface Profile {
-  message: string;
-  user: User;
-  currentPlan: CurrentPlan | null;
-  hasPaymentMethod: boolean;
-}
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);

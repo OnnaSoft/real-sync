@@ -5,6 +5,7 @@ export interface User {
   username: string;
   email: string;
   fullname: string;
+  avatarUrl?: string;
   stripeCustomerId: string;
   userSubscription: any[]; // This is an empty array in the example, so we'll use 'any[]' for now
 }

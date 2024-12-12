@@ -6,6 +6,8 @@ import stripe from "&/lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 import { RequestWithSession } from "&/types/http";
 import addPaymentMethodInfo, { RequestWithUserAndPayment } from "server/middlewares/addPaymentMethodInfo";
+import { uploadFileToS3 } from "&/services/s3Service";
+import multer from "multer";
 
 const usersRouter = express.Router();
 
@@ -114,7 +116,9 @@ usersRouter.get(
   }
 );
 
-interface UpdateProfileBody {}
+interface UpdateProfileBody {
+  fullname: string;
+}
 
 interface UpdateProfileResponse {
   message: string;
@@ -137,7 +141,13 @@ usersRouter.patch("/profile",
         });
       }
 
-      const payload = req.body;
+      profile.fullname = req.body.fullname;
+
+      await profile.save().catch(() => {
+        throw new HttpError(400, "Failed to update profile", {
+          errors: { user: { message: "Failed to update profile" } },
+        });
+      });
 
       res.json({
         message: "Profile updated successfully",
@@ -155,7 +165,8 @@ interface AvatarResponse {
 
 usersRouter.post("/avatar",
   validateSessionToken,
-  async (req: RequestWithSession<{}, ProfileResponse>, res: Response<AvatarResponse>, next: NextFunction) => {
+  multer().single('avatar'),
+  async (req: RequestWithSession<{}, ProfileResponse> & { file?: Express.Multer.File }, res: Response<AvatarResponse>, next: NextFunction) => {
     try {
       const user = req.user;
       if (!user) {
@@ -169,7 +180,17 @@ usersRouter.post("/avatar",
         });
       }
 
-      const payload = req.body;
+      if (!req.file) {
+        throw new HttpError(400, "No avatar file uploaded", {
+          errors: { avatar: { message: "No avatar file uploaded" } },
+        });
+      }
+
+      const fileKey = `avatars/${user.id}-${Date.now()}.${req.file.originalname.split('.').pop()}`;
+      const avatarUrl = await uploadFileToS3(req.file, fileKey);
+
+      // Update user's avatar URL in the database
+      await profile.update({ avatarUrl });
 
       res.json({
         message: "Avatar uploaded successfully",
@@ -291,7 +312,7 @@ usersRouter.post(
 
       res.status(200).json({
         message: "Plan assigned successfully",
-        userSubscription: updatedUserSubscription.toJSON() as UserSubscriptionWithPlan,
+        userSubscription: updatedUserSubscription.toJSON(),
       });
     } catch (error) {
       next(error);

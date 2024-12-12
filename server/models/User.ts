@@ -6,6 +6,7 @@ export interface UserAttributes {
   fullname: string;
   username: string;
   email: string;
+  avatarUrl?: string;
   password: string;
   resetToken: string | null;
   resetTokenExpiry: Date | null;
@@ -71,6 +72,13 @@ const UserModel = (sequelize: Sequelize): UserModel => {
           isEmail: { msg: "Invalid email address" },
         },
       },
+      avatarUrl: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        validate: {
+          isUrl: { msg: "Invalid URL" },
+        },
+      },
       password: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -78,11 +86,11 @@ const UserModel = (sequelize: Sequelize): UserModel => {
           notEmpty: { msg: "Password is required" },
           isStrongPassword: {
             args: {
-              minLength: parseInt(process.env.PASSWORD_MIN_LENGTH || "8"),
-              minLowercase: parseInt(process.env.PASSWORD_MIN_LOWERCASE || "1"),
-              minUppercase: parseInt(process.env.PASSWORD_MIN_UPPERCASE || "1"),
-              minNumbers: parseInt(process.env.PASSWORD_MIN_NUMBERS || "1"),
-              minSymbols: parseInt(process.env.PASSWORD_MIN_SYMBOLS || "1"),
+              minLength: parseInt(process.env.PASSWORD_MIN_LENGTH ?? "8"),
+              minLowercase: parseInt(process.env.PASSWORD_MIN_LOWERCASE ?? "1"),
+              minUppercase: parseInt(process.env.PASSWORD_MIN_UPPERCASE ?? "1"),
+              minNumbers: parseInt(process.env.PASSWORD_MIN_NUMBERS ?? "1"),
+              minSymbols: parseInt(process.env.PASSWORD_MIN_SYMBOLS ?? "1"),
             },
             msg: "Password must be at least 8 characters long and include at least one lowercase letter, one uppercase letter, one number, and one symbol",
           },
@@ -117,7 +125,7 @@ const UserModel = (sequelize: Sequelize): UserModel => {
         beforeCreate: async (user: UserInstance) => {
           if (user.password) {
             const salt = await bcrypt.genSalt(
-              parseInt(process.env.BCRYPT_SALT_ROUNDS || "10")
+              parseInt(process.env.BCRYPT_SALT_ROUNDS ?? "10")
             );
             user.password = await bcrypt.hash(user.password, salt);
           }
@@ -125,7 +133,7 @@ const UserModel = (sequelize: Sequelize): UserModel => {
         beforeUpdate: async (user: UserInstance) => {
           if (user.changed("password") && user.password) {
             const salt = await bcrypt.genSalt(
-              parseInt(process.env.BCRYPT_SALT_ROUNDS || "10")
+              parseInt(process.env.BCRYPT_SALT_ROUNDS ?? "10")
             );
             user.password = await bcrypt.hash(user.password, salt);
           }
