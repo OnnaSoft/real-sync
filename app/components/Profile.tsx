@@ -148,7 +148,7 @@ export default function Profile() {
   const { user } = profile;
 
   const renderProfileField = (label: string, value: string, fieldName: keyof User) => (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       <Label htmlFor={fieldName}>{label}</Label>
       <Input
         id={fieldName}
@@ -170,12 +170,12 @@ export default function Profile() {
           <CardDescription>View and update your profile details</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 space-y-4">
               {renderProfileField("Username", user.username, "username")}
               {renderProfileField("Email", user.email, "email")}
               {renderProfileField("Full Name", user.fullname, "fullname")}
-              <div className="space-y-2">
+              <div className="space-y-2 w-full">
                 <Label htmlFor="stripeCustomerId">Stripe Customer ID</Label>
                 <Input
                   id="stripeCustomerId"
@@ -183,7 +183,7 @@ export default function Profile() {
                   disabled
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 w-full">
                 <Label htmlFor="paymentMethod">Payment Method</Label>
                 <Input
                   id="paymentMethod"
@@ -192,12 +192,14 @@ export default function Profile() {
                 />
               </div>
             </div>
-            <ProfileAvatar
-              avatarUrl={user.avatarUrl}
-              fullname={user.fullname}
-              isEditing={isEditing}
-              onAvatarChange={handleAvatarChange}
-            />
+            <div className="flex-shrink-0">
+              <ProfileAvatar
+                avatarUrl={user.avatarUrl}
+                fullname={user.fullname}
+                isEditing={isEditing}
+                onAvatarChange={handleAvatarChange}
+              />
+            </div>
           </form>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2">
