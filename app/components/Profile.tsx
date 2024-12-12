@@ -40,8 +40,9 @@ export interface Profile {
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<User>>({});
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [formData, setFormData] = useState<Pick<User, 'fullname'>>({
+    fullname: "",
+  });
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const token = useAppSelector((state) => state.auth.token);
@@ -65,23 +66,16 @@ export default function Profile() {
   });
 
   const updateProfileMutation = useMutation({
-    mutationFn: async (updatedUser: Partial<User>) => {
-      const formData = new FormData();
-      Object.entries(updatedUser).forEach(([key, value]) => {
-        if (value !== undefined) {
-          formData.append(key, value.toString());
-        }
-      });
-      if (avatarFile) {
-        formData.append('avatar', avatarFile);
-      }
+    mutationFn: async (updatedUser: Pick<User, 'fullname'>) => {
       const response = await fetch("/users/profile", {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: formData,
+        body: JSON.stringify(updatedUser),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update profile");
@@ -91,7 +85,6 @@ export default function Profile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userProfile"] });
       setIsEditing(false);
-      setAvatarFile(null);
       toast({
         title: "Profile updated successfully",
         description: "Your profile information has been updated.",
@@ -106,13 +99,47 @@ export default function Profile() {
     },
   });
 
+  const updateAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const avatarFormData = new FormData();
+      avatarFormData.append('avatar', file);
+
+      const response = await fetch("/users/avatar", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: avatarFormData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload avatar");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userProfile"] });
+      toast({
+        title: "Avatar updated successfully",
+        description: "Your profile picture has been updated.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating avatar",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }, []);
 
   const handleAvatarChange = useCallback((file: File) => {
-    setAvatarFile(file);
-  }, []);
+    updateAvatarMutation.mutate(file);
+  }, [updateAvatarMutation]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -154,8 +181,8 @@ export default function Profile() {
         id={fieldName}
         name={fieldName}
         defaultValue={value}
-        onChange={handleInputChange}
-        disabled={!isEditing}
+        onChange={fieldName === "fullname" ? handleInputChange : undefined}
+        disabled={fieldName !== "fullname" || !isEditing}
       />
     </div>
   );
@@ -170,37 +197,39 @@ export default function Profile() {
           <CardDescription>View and update your profile details</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-6">
+          <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-1 space-y-4">
-              {renderProfileField("Username", user.username, "username")}
-              {renderProfileField("Email", user.email, "email")}
-              {renderProfileField("Full Name", user.fullname, "fullname")}
-              <div className="space-y-2 w-full">
-                <Label htmlFor="stripeCustomerId">Stripe Customer ID</Label>
-                <Input
-                  id="stripeCustomerId"
-                  value={user.stripeCustomerId}
-                  disabled
-                />
-              </div>
-              <div className="space-y-2 w-full">
-                <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Input
-                  id="paymentMethod"
-                  value={profile.hasPaymentMethod ? "Added" : "Not added"}
-                  disabled
-                />
-              </div>
+              <form onSubmit={handleSubmit}>
+                {renderProfileField("Username", user.username, "username")}
+                {renderProfileField("Email", user.email, "email")}
+                {renderProfileField("Full Name", user.fullname, "fullname")}
+                <div className="space-y-2 w-full">
+                  <Label htmlFor="stripeCustomerId">Stripe Customer ID</Label>
+                  <Input
+                    id="stripeCustomerId"
+                    value={user.stripeCustomerId}
+                    disabled
+                  />
+                </div>
+                <div className="space-y-2 w-full">
+                  <Label htmlFor="paymentMethod">Payment Method</Label>
+                  <Input
+                    id="paymentMethod"
+                    value={profile.hasPaymentMethod ? "Added" : "Not added"}
+                    disabled
+                  />
+                </div>
+              </form>
             </div>
             <div className="flex-shrink-0">
               <ProfileAvatar
                 avatarUrl={user.avatarUrl}
                 fullname={user.fullname}
-                isEditing={isEditing}
+                isEditing={true}
                 onAvatarChange={handleAvatarChange}
               />
             </div>
-          </form>
+          </div>
         </CardContent>
         <CardFooter className="flex justify-end space-x-2">
           {isEditing ? (

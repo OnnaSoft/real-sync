@@ -114,6 +114,72 @@ usersRouter.get(
   }
 );
 
+interface UpdateProfileBody {}
+
+interface UpdateProfileResponse {
+  message: string;
+  user: UserAttributes;
+}
+
+usersRouter.patch("/profile",
+  validateSessionToken,
+  async (req: RequestWithSession<{}, ProfileResponse, UpdateProfileBody>, res: Response<UpdateProfileResponse>, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        throw new HttpError(401, "Unauthorized");
+      }
+
+      const profile = await User.findByPk(user.id);
+      if (!profile) {
+        throw new HttpError(404, "User not found", {
+          errors: { user: { message: "User not found" } },
+        });
+      }
+
+      const payload = req.body;
+
+      res.json({
+        message: "Profile updated successfully",
+        user: profile.toJSON(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+interface AvatarResponse {
+  message: string;
+  avatarUrl: string;
+}
+
+usersRouter.post("/avatar",
+  validateSessionToken,
+  async (req: RequestWithSession<{}, ProfileResponse>, res: Response<AvatarResponse>, next: NextFunction) => {
+    try {
+      const user = req.user;
+      if (!user) {
+        throw new HttpError(401, "Unauthorized");
+      }
+
+      const profile = await User.findByPk(user.id);
+      if (!profile) {
+        throw new HttpError(404, "User not found", {
+          errors: { user: { message: "User not found" } },
+        });
+      }
+
+      const payload = req.body;
+
+      res.json({
+        message: "Avatar uploaded successfully",
+        avatarUrl: "https://example.com/avatar.jpg",
+      })
+    } catch (error) {
+      next(error);
+    }
+  });
+
 usersRouter.post(
   "/assign-plan",
   validateSessionToken,

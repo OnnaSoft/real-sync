@@ -33,12 +33,12 @@ export function ProfileAvatar({ avatarUrl, fullname, isEditing, onAvatarChange }
         );
         setCroppedImage(croppedImageUrl);
         setCropperOpen(false);
-        
+
         // Convert base64 to blob
         const response = await fetch(croppedImageUrl);
         const blob = await response.blob();
         const file = new File([blob], "cropped-avatar.jpg", { type: "image/jpeg" });
-        
+
         onAvatarChange(file);
       }
     } catch (e) {
@@ -63,17 +63,19 @@ export function ProfileAvatar({ avatarUrl, fullname, isEditing, onAvatarChange }
       fileInputRef.current.click();
     }
   };
+  const containerStyle = 'w-40 h-40 bg-gray-200 flex items-center justify-center overflow-hidden';
 
   return (
     <div className="flex flex-col items-center space-y-4">
-      <div 
-        className={`w-40 h-40 bg-gray-200 flex items-center justify-center overflow-hidden ${isEditing ? 'cursor-pointer' : ''}`}
+      <button
+        className={containerStyle + (isEditing ? 'cursor-pointer' : '')}
         onClick={handleImageClick}
+        disabled={!isEditing}
       >
         {(avatarUrl || croppedImage) ? (
-          <img 
-            src={avatarUrl || croppedImage || undefined} 
-            alt={fullname} 
+          <img
+            src={avatarUrl ?? croppedImage ?? undefined}
+            alt={fullname}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -81,7 +83,7 @@ export function ProfileAvatar({ avatarUrl, fullname, isEditing, onAvatarChange }
             {fullname.split(' ').map(n => n[0]).join('').toUpperCase()}
           </span>
         )}
-      </div>
+      </button>
       <input
         type="file"
         accept="image/*"
