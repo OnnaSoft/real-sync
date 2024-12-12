@@ -20,6 +20,7 @@ export interface RequestWithUser<
     username: string;
     email: string;
     fullname: string;
+    avatarUrl?: string;
     stripeCustomerId: string | null;
   };
 }
@@ -64,6 +65,7 @@ const validateSessionToken = (req: RequestWithUser, res: Response, next: NextFun
         username: user.getDataValue('username'),
         email: user.getDataValue('email'),
         fullname: user.getDataValue('fullname'),
+        avatarUrl: user.getDataValue('avatarUrl'),
         stripeCustomerId: user.getDataValue('stripeCustomerId'),
       };
       next();
