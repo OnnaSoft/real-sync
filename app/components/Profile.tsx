@@ -225,7 +225,7 @@ export default function Profile() {
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={updateProfileMutation.isPending}
+                disabled={updateProfileMutation.isPending || !formData.fullname}
               >
                 {updateProfileMutation.isPending ? "Updating..." : "Save Changes"}
               </Button>

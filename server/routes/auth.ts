@@ -7,6 +7,10 @@ import { Resend } from "resend";
 import crypto from "crypto";
 import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
+import Joi from "joi";
+import { validateRequest } from "&/middlewares/validateRequest";
+import validateSessionToken, { RequestWithUser } from "&/middlewares/validateSessionToken";
+import logger from "&/lib/logger";
 
 const authRouter = Router();
 
@@ -59,8 +63,20 @@ interface LoginSuccessResBody {
   token: string;
 }
 
+const loginSchema = Joi.object({
+  username: Joi.string().required().messages({
+    'string.empty': 'Username is required',
+    'any.required': 'Username is required'
+  }),
+  password: Joi.string().required().messages({
+    'string.empty': 'Password is required',
+    'any.required': 'Password is required'
+  })
+});
+
 authRouter.post(
   "/login",
+  validateRequest(loginSchema),
   async (
     req: Request<{}, LoginSuccessResBody, LoginBody, LoginQuery>,
     res: Response<LoginSuccessResBody>,
@@ -149,8 +165,30 @@ interface RegisterSuccessResBody {
   userId: number;
 }
 
+const registerSchema = Joi.object({
+  fullname: Joi.string().required().messages({
+    'string.empty': 'Full name is required',
+    'any.required': 'Full name is required'
+  }),
+  username: Joi.string().required().messages({
+    'string.empty': 'Username is required',
+    'any.required': 'Username is required'
+  }),
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Email must be a valid email address',
+    'any.required': 'Email is required'
+  }),
+  password: Joi.string().min(8).required().messages({
+    'string.empty': 'Password is required',
+    'string.min': 'Password must be at least 8 characters long',
+    'any.required': 'Password is required'
+  })
+});
+
 authRouter.post(
   "/register",
+  validateRequest(registerSchema),
   async (
     req: Request<{}, RegisterSuccessResBody, RegisterBody>,
     res: Response<RegisterSuccessResBody>,
@@ -247,8 +285,17 @@ interface ForgotPasswordSuccessResBody {
   message: string;
 }
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Email must be a valid email address',
+    'any.required': 'Email is required'
+  })
+});
+
 authRouter.post(
   "/forgot-password",
+  validateRequest(forgotPasswordSchema),
   async (
     req: Request<{}, ForgotPasswordSuccessResBody, ForgotPasswordBody>,
     res: Response<ForgotPasswordSuccessResBody>,
@@ -267,17 +314,14 @@ authRouter.post(
         });
       }
 
-      // Generate a password reset token
       const resetToken = crypto.randomBytes(20).toString("hex");
-      const resetTokenExpiry = new Date(Date.now() + 3600000); // Token expires in 1 hour
+      const resetTokenExpiry = new Date(Date.now() + 3600000);
 
-      // Update user with reset token and expiry
       await user.update({
         resetToken,
         resetTokenExpiry,
       });
 
-      // Send password reset email using Resend
       const { error } = await resend.emails.send({
         from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
         to: user.getDataValue("email"),
@@ -341,8 +385,21 @@ interface ResetPasswordSuccessResBody {
   message: string;
 }
 
+const resetPasswordSchema = Joi.object({
+  token: Joi.string().required().messages({
+    'string.empty': 'Reset token is required',
+    'any.required': 'Reset token is required'
+  }),
+  newPassword: Joi.string().min(8).required().messages({
+    'string.empty': 'New password is required',
+    'string.min': 'New password must be at least 8 characters long',
+    'any.required': 'New password is required'
+  })
+});
+
 authRouter.post(
   "/reset-password",
+  validateRequest(resetPasswordSchema),
   async (
     req: Request<{}, ResetPasswordSuccessResBody, ResetPasswordBody>,
     res: Response<ResetPasswordSuccessResBody>,
@@ -378,5 +435,57 @@ authRouter.post(
     }
   }
 );
+
+interface UpdatePasswordBody {
+  password: string;
+}
+
+interface UpdatePasswordSuccessResBody {
+  message: string;
+}
+
+const updatePasswordSchema = Joi.object({
+  password: Joi.string().min(8).required().messages({
+    'string.empty': 'Password is required',
+    'string.min': 'Password must be at least 8 characters long',
+    'any.required': 'Password is required'
+  })
+});
+
+authRouter.patch("/update-password",
+  validateSessionToken,
+  validateRequest(updatePasswordSchema),
+  async (req: RequestWithUser<{}, UpdatePasswordSuccessResBody, UpdatePasswordBody>, res: Response, next: NextFunction) => {
+    const { password } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    try {
+      const user = await User.findByPk(userId)
+        .catch((error) => {
+          logger.error("Failed to update password", { error: error.message });
+          throw new HttpError(400, "Failed to update password");
+        });
+
+      if (!user) {
+        throw new HttpError(404, "User not found");
+      }
+
+      await user.update({ password })
+        .catch((error) => {
+          logger.error("Failed to update password", { error: error.message });
+          throw new HttpError(400, "Failed to update password");
+        });
+
+      res.status(200).json({
+        message: "Password updated successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  })
 
 export default authRouter;

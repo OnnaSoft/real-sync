@@ -8,6 +8,7 @@ import { RequestWithSession } from "&/types/http";
 import addPaymentMethodInfo, { RequestWithUserAndPayment } from "server/middlewares/addPaymentMethodInfo";
 import { uploadFileToS3 } from "&/services/s3Service";
 import multer from "multer";
+import logger from "&/lib/logger";
 
 const usersRouter = express.Router();
 
@@ -143,7 +144,8 @@ usersRouter.patch("/profile",
 
       profile.fullname = req.body.fullname;
 
-      await profile.save().catch(() => {
+      await profile.save().catch((err) => {
+        logger.error(err);
         throw new HttpError(400, "Failed to update profile", {
           errors: { user: { message: "Failed to update profile" } },
         });

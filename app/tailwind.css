@@ -103,3 +103,6 @@
   transform: rotate(45deg);
 }
 
+.text-destructive-foreground {
+  color: hsl(var(--foreground));
+}
