@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppSelector } from "@/store/hooks";
+import useFetch from "~/hooks/useFetch";
 
 interface BillingHistory {
   id: string;
@@ -33,6 +34,7 @@ interface BillingHistoryResponse {
 }
 
 export default function Billing() {
+  const fetch = useFetch();
   const auth = useAppSelector((state) => state.auth);
 
   const { data, isLoading, error } = useQuery<BillingHistoryResponse, Error>({
@@ -114,7 +116,7 @@ export default function Billing() {
                       <Button variant="ghost" size="sm" asChild>
                         <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer">
                           <Download className="mr-2 h-4 w-4" />
-                          {item.invoice || "Download"}
+                          {item.invoice ?? "Download"}
                         </a>
                       </Button>
                     ) : (

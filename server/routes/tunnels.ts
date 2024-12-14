@@ -2,7 +2,7 @@ import express, { Response, NextFunction } from 'express';
 import validateSessionToken, { RequestWithUser } from '&/middlewares/validateSessionToken';
 import { sequelize, Tunnel } from '../db';
 import { HttpError } from 'http-errors-enhanced';
-import { generateApiKey } from '&/lib/utils';
+import { generateUniqueKey } from '&/lib/utils';
 import { Domain } from '&/types/models';
 import fetch from 'node-fetch';
 import { Transaction } from 'sequelize';
@@ -123,7 +123,7 @@ tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, a
       throw new HttpError(400, "Domain is required");
     }
 
-    const apiKey = generateApiKey();
+    const apiKey = generateUniqueKey();
 
     const newTunnel = await Tunnel.create({
       domain,
@@ -273,7 +273,7 @@ tunnelsRouter.post('/:id/regenerate-api-key', validateSessionToken, async (req: 
       throw new HttpError(404, "Tunnel not found");
     }
 
-    const newApiKey = generateApiKey();
+    const newApiKey = generateUniqueKey();
 
     const updateResponse = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
       method: "PATCH",

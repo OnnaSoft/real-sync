@@ -11,6 +11,7 @@ import Joi from "joi";
 import { validateRequest } from "&/middlewares/validateRequest";
 import validateSessionToken, { RequestWithUser } from "&/middlewares/validateSessionToken";
 import logger from "&/lib/logger";
+import { getRedisInstance } from "&/redis";
 
 const authRouter = Router();
 
@@ -21,6 +22,7 @@ const requiredEnvVars = [
   "FRONTEND_URL",
   "EMAIL_FROM_NAME",
   "EMAIL_FROM_ADDRESS",
+  "REFRESH_TOKEN_TTL",
 ];
 const missingEnvVars = requiredEnvVars.filter(
   (varName) => !process.env[varName]
@@ -35,6 +37,7 @@ if (missingEnvVars.length > 0) {
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "";
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
+const REFRESH_TOKEN_TTL = process.env.REFRESH_TOKEN_TTL;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface ErrorsMap {
@@ -61,6 +64,7 @@ interface LoginSuccessResBody {
   message: string;
   user: UserData;
   token: string;
+  refreshToken: string;
 }
 
 const loginSchema = Joi.object({
@@ -124,6 +128,22 @@ authRouter.post(
         { expiresIn: JWT_EXPIRATION }
       );
 
+      const redisCli = await getRedisInstance()
+        .catch((error) => {
+          logger.error("Failed to get Redis client", { error: error.message });
+          throw new HttpError(500, "Failed to register user");
+        });
+      await redisCli.set(`user:${user.getDataValue("id")}:token`, token);
+      const refreshToken = jwt.sign(
+        {
+          userId: user.getDataValue("id"),
+          username: user.getDataValue("username"),
+        },
+        JWT_SECRET,
+        { expiresIn: REFRESH_TOKEN_TTL }
+      );
+      await redisCli.set(`user:${user.getDataValue("id")}:refreshToken`, refreshToken);
+
       res.status(200).json({
         message: "Login successful",
         user: {
@@ -133,6 +153,72 @@ authRouter.post(
           email: user.getDataValue("email"),
         },
         token: token,
+        refreshToken: refreshToken,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+interface RefreshTokenQuery {
+  redirect?: string;
+}
+
+interface RefreshTokenSuccessResBody {
+  message: string;
+  token: string;
+}
+
+authRouter.get(
+  "/refresh-token",
+  async (
+    req: Request<{}, {}, {}, RefreshTokenQuery>,
+    res: Response<RefreshTokenSuccessResBody>,
+    next: NextFunction
+  ) => {
+    const refreshToken = req.headers.authorization?.split(" ")[1];
+
+    if (!refreshToken) {
+      throw new HttpError(401, "No refresh token provided");
+    }
+
+    try {
+      const payload = jwt.decode(refreshToken);
+      if (!payload || typeof payload === "string") {
+        throw new HttpError(401, "Invalid refresh token");
+      }
+
+      const { userId, username } = payload as { userId: number; username: string };
+
+      const redisCli = await getRedisInstance()
+        .catch((error) => {
+          logger.error("Failed to get Redis client", { error: error.message });
+          throw new HttpError(500, "Failed to register user");
+        });
+      const validate = await redisCli.get(`user:${userId}:refreshToken`);
+
+      if (validate !== refreshToken) {
+        throw new HttpError(401, "Invalid refresh token");
+      }
+
+      const token = jwt.sign(
+        { userId, username },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRATION }
+      );
+
+      await redisCli.set(`user:${userId}:token`, token);
+
+      const redirect = req.query.redirect;
+      if (redirect) {
+        res.redirect(redirect);
+        return;
+      }
+
+      res.status(200).json({
+        message: "Token refreshed successfully",
+        token,
       });
     } catch (error) {
       next(error);
@@ -437,6 +523,7 @@ authRouter.post(
 );
 
 interface UpdatePasswordBody {
+  oldPassword: string;
   password: string;
 }
 
@@ -445,6 +532,10 @@ interface UpdatePasswordSuccessResBody {
 }
 
 const updatePasswordSchema = Joi.object({
+  oldPassword: Joi.string().required().messages({
+    'string.empty': 'Old password is required',
+    'any.required': 'Old password is required'
+  }),
   password: Joi.string().min(8).required().messages({
     'string.empty': 'Password is required',
     'string.min': 'Password must be at least 8 characters long',
@@ -456,7 +547,7 @@ authRouter.patch("/update-password",
   validateSessionToken,
   validateRequest(updatePasswordSchema),
   async (req: RequestWithUser<{}, UpdatePasswordSuccessResBody, UpdatePasswordBody>, res: Response, next: NextFunction) => {
-    const { password } = req.body;
+    const { password, oldPassword } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -472,6 +563,12 @@ authRouter.patch("/update-password",
 
       if (!user) {
         throw new HttpError(404, "User not found");
+      }
+
+      const hashedPassword = user.getDataValue("password");
+      const isPasswordValid = await bcrypt.compare(oldPassword, hashedPassword);
+      if (!isPasswordValid) {
+        throw new HttpError(400, "Invalid old password");
       }
 
       await user.update({ password })

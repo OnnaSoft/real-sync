@@ -32,10 +32,15 @@ async function connectToRedis() {
   return redisClient;
 }
 
-async function getRedisInstance() {
+async function getRedisInstance(): Promise<ReturnType<typeof createClient>> {
   if (!redisClient) {
     await connectToRedis();
   }
+
+  if (!redisClient) {
+    throw new Error('Redis client is not connected');
+  }
+
   return redisClient;
 }
 
