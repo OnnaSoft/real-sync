@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import useFetch from "~/hooks/useFetch";
 
 type ResetPasswordData = {
   token: string;
@@ -21,6 +22,7 @@ type FormErrors = {
 };
 
 export default function ResetPasswordPage() {
+  const fetch = useFetch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -55,7 +57,7 @@ export default function ResetPasswordPage() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const token = searchParams.get("token") || "";
+    const token = searchParams.get("token") ?? "";
     const newPassword = formData.get("newPassword") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 

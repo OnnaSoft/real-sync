@@ -7,8 +7,10 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { AlertCircle, BarChart3 } from 'lucide-react';
 import { DomainConsumption } from '~/models/tunnel';
 import { useAppSelector } from '~/store/hooks';
+import useFetch from '~/hooks/useFetch';
 
 export default function DomainTrafficDashboard() {
+  const fetch = useFetch();
   const [selectedDomain, setSelectedDomain] = useState<string>("All Domains");
   const [data, setData] = useState<DomainConsumption[]>([]);
   const [isLoading, setIsLoading] = useState(true);

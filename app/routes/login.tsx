@@ -10,6 +10,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useAppDispatch } from "@/store/hooks";
 import { login } from "@/store/slices/authSlice";
 import { User } from "@/models/user";
+import useFetch from "~/hooks/useFetch";
 
 type LoginData = {
   username: string;
@@ -25,9 +26,11 @@ type LoginResponse = {
   message: string;
   user: User;
   token: string;
+  refreshToken: string;
 };
 
 export default function LoginPage() {
+  const fetch = useFetch();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -50,7 +53,11 @@ export default function LoginPage() {
       });
     },
     onSuccess: (data) => {
-      dispatch(login({ user: data.user, token: data.token }));
+      dispatch(login({
+        user: data.user,
+        token: data.token,
+        refreshToken: data.refreshToken
+      }));
       navigate("/dashboard");
     },
   });

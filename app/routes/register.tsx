@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { HttpErrors } from "@/models/errors";
+import useFetch from "~/hooks/useFetch";
 
 type RegisterData = {
   fullname: string;
@@ -28,6 +29,7 @@ type FormErrors = {
 };
 
 export default function RegisterPage() {
+  const fetch = useFetch();
   const navigate = useNavigate();
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
@@ -51,7 +53,7 @@ export default function RegisterPage() {
               setFormErrors(errors);
             }
 
-            throw new Error(data.message || data.errors.server?.message || "Registration failed");
+            throw new Error(data.message ?? data.errors.server?.message ?? "Registration failed");
           });
         }
         return res.json();

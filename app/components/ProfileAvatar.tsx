@@ -3,6 +3,7 @@ import Cropper, { Area, Point } from 'react-easy-crop';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { getCroppedImg } from '@/lib/cropImage';
+import useFetch from '~/hooks/useFetch';
 
 interface ProfileAvatarProps {
   avatarUrl?: string;
@@ -12,6 +13,7 @@ interface ProfileAvatarProps {
 }
 
 export function ProfileAvatar({ avatarUrl, fullname, isEditing, onAvatarChange }: Readonly<ProfileAvatarProps>) {
+  const fetch = useFetch();
   const [cropperOpen, setCropperOpen] = useState(false);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });

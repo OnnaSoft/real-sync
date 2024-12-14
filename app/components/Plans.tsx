@@ -5,6 +5,7 @@ import { logout } from "@/store/slices/authSlice";
 import { Loader2, AlertCircle, Info } from 'lucide-react';
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import useFetch from "~/hooks/useFetch";
 
 interface Plan {
   id: number;
@@ -19,7 +20,7 @@ interface Plan {
   dedicatedAccountManager: boolean;
 }
 
-const fetchPlans = async (): Promise<Plan[]> => {
+const fetchPlans = (fetch: ReturnType<typeof useFetch>) => async (): Promise<Plan[]> => {
   const response = await fetch("/plans");
   if (response.status === 401) {
     store.dispatch(logout());
@@ -48,13 +49,14 @@ const formatPrice = (plan: Plan): string => {
 };
 
 export default function Plans() {
+  const fetch = useFetch();
   const {
     data: plans = [],
     isLoading,
     error,
   } = useQuery<Plan[], Error>({
     queryKey: ["plans"],
-    queryFn: fetchPlans,
+    queryFn: fetchPlans(fetch),
   });
 
   if (isLoading) {
