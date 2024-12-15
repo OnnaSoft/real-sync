@@ -1,45 +1,64 @@
-import { Network, Cpu, ShieldCheck } from 'lucide-react';
+import { Network, Cpu, ShieldCheck } from "lucide-react";
 
-export default function UseCases() {
+interface UseCasesProps {
+  readonly backgroundColor: string;
+}
+
+export default function UseCases({ backgroundColor }: UseCasesProps) {
   const cases = [
     {
       icon: Network,
       title: "Remote Branch Connectivity",
-      description: "Secure access to local resources from distributed offices.",
-      example: "A multinational company uses Real Sync to connect its offices across different countries, enabling fast and secure access to centralized databases and management systems."
+      description:
+        "Enable distributed offices to securely access centralized resources and systems.",
+      example:
+        "A multinational company uses RealSync to connect its offices worldwide, ensuring secure and efficient access to databases and management tools.",
     },
     {
       icon: Cpu,
       title: "Business Automation",
-      description: "Integration of cloud systems with physical devices such as printers or PLCs.",
-      example: "A factory implements Real Sync to connect its cloud-based production control systems with PLCs on the shop floor, achieving real-time monitoring and increased operational efficiency."
+      description:
+        "Seamlessly integrate cloud services with physical devices like printers or PLCs.",
+      example:
+        "A factory leverages RealSync to connect cloud-based production systems with on-site PLCs, achieving real-time monitoring and enhanced automation.",
     },
     {
       icon: ShieldCheck,
       title: "Critical Redundancy",
-      description: "Ensures continuous availability of essential services.",
-      example: "A financial service provider uses Real Sync to ensure its trading platforms remain operational 24/7, automatically redirecting traffic to backup servers in case of failures."
-    }
+      description:
+        "Guarantee uninterrupted availability of mission-critical services.",
+      example:
+        "A financial institution ensures its trading platforms remain operational 24/7, using RealSync to redirect traffic to backup servers during outages.",
+    },
   ];
 
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-extrabold text-center mb-12 bg-clip-text">
-          Use Cases
+    <section className={`py-20 px-6 lg:px-16 ${backgroundColor}`}>
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-4xl font-bold text-center mb-12 text-gray-800">
+          RealSync in Action: Use Cases
         </h2>
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
           {cases.map((useCase) => (
-            <div key={useCase.title} className="bg-white rounded-lg shadow-lg overflow-hidden transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-xl">
-              <div className="p-6">
+            <div
+              key={useCase.title}
+              className="bg-white rounded-xl shadow-lg overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+            >
+              <div className="p-8 text-center">
                 <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-6 mx-auto">
-                  <useCase.icon className="h-8 w-8 text-blue-600" />
+                  <useCase.icon className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold text-center text-gray-800 mb-4">{useCase.title}</h3>
-                <p className="text-gray-600 text-center mb-6 px-4 leading-relaxed">{useCase.description}</p>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                  {useCase.title}
+                </h3>
+                <p className="text-gray-600 leading-relaxed mb-6">
+                  {useCase.description}
+                </p>
               </div>
-              <div className="bg-gray-50 p-6 border-t border-gray-200">
-                <h4 className="text-lg font-semibold text-gray-700 mb-3">Application Example:</h4>
+              <div className="bg-gray-100 p-6 border-t border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-700 mb-3">
+                  Application Example:
+                </h4>
                 <p className="text-gray-600 leading-relaxed">{useCase.example}</p>
               </div>
             </div>

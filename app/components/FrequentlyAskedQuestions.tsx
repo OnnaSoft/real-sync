@@ -1,27 +1,27 @@
-import { MinusCircle, PlusCircle } from 'lucide-react';
+import { MinusCircle, PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 
-const FAQItem = ({
-  question,
-  answer,
-}: {
+interface FAQItemProps {
   question: string;
   answer: string;
-}) => {
+  className?: string;
+}
+
+const FAQItem = ({ question, answer, className }: FAQItemProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Card className="shadow-lg rounded-xl bg-white overflow-hidden transition-transform duration-300 hover:shadow-2xl">
+    <Card
+      className={`shadow-lg rounded-xl bg-white overflow-hidden transition-transform duration-300 hover:shadow-2xl ${className}`}
+    >
       <CardContent className="p-0">
         <button
           className="flex justify-between items-center w-full py-6 px-6 text-left transition duration-200 ease-in-out hover:bg-gray-50"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <span className="text-xl font-extrabold text-gray-800">
-            {question}
-          </span>
+          <span className="text-xl font-extrabold text-gray-800">{question}</span>
           <motion.div
             initial={false}
             animate={{ rotate: isOpen ? 45 : 0 }}
@@ -48,9 +48,7 @@ const FAQItem = ({
               transition={{ duration: 0.3 }}
             >
               <div className="px-6 pb-6">
-                <p className="leading-relaxed text-gray-600">
-                  {answer}
-                </p>
+                <p className="leading-relaxed text-gray-600">{answer}</p>
               </div>
             </motion.div>
           )}
@@ -60,11 +58,22 @@ const FAQItem = ({
   );
 };
 
-export default function FrequentlyAskedQuestions() {
+interface FrequentlyAskedQuestionsProps {
+  readonly backgroundColor: string;
+  readonly className?: string;
+}
+
+export default function FrequentlyAskedQuestions({
+  backgroundColor,
+  className = "",
+}: FrequentlyAskedQuestionsProps) {
   return (
-    <section id="faq" className="py-20 bg-gray-50 relative">
+    <section
+      id="faq"
+      className={`py-20 ${backgroundColor} relative ${className}`}
+    >
       <div className="container mx-auto px-4 max-w-6xl">
-        <h2 className="text-4xl font-extrabold text-center mb-12 bg-clip-text">
+        <h2 className="text-4xl font-extrabold text-center mb-12 text-gray-800">
           Frequently Asked Questions
         </h2>
         <div className="space-y-6">

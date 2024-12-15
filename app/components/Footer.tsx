@@ -1,10 +1,10 @@
-import React from 'react';
 import { Link } from '@remix-run/react';
 
-const aboutUrl = "https://onnasoft.us";
-const contactUrl = "https://onnasoft.us/contact";
+interface FooterProps {
+  readonly onnasoftUrl: string;
+}
 
-export default function Footer() {
+export default function Footer({ onnasoftUrl }: FooterProps) {
   return (
     <footer className="bg-gradient-to-b from-gray-900 to-gray-800 text-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
@@ -40,7 +40,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  to={aboutUrl}
+                  to={onnasoftUrl}
                   className="text-gray-300 hover:text-white transition duration-300"
                 >
                   About Us
@@ -48,7 +48,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  to={contactUrl}
+                  to={"/contact"}
                   className="text-gray-300 hover:text-white transition duration-300"
                 >
                   Contact

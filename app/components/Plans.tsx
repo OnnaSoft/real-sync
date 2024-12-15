@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PricingCard } from "./PricingCard";
 import store from "@/store";
 import { logout } from "@/store/slices/authSlice";
-import { Loader2, AlertCircle, Info } from 'lucide-react';
+import { Loader2, AlertCircle, Info } from "lucide-react";
 import { motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import useFetch from "~/hooks/useFetch";
@@ -18,6 +18,10 @@ interface Plan {
   supportLevel: string;
   apiIntegration: boolean;
   dedicatedAccountManager: boolean;
+}
+
+interface PlansProps {
+  readonly backgroundColor: string;
 }
 
 const fetchPlans = (fetch: ReturnType<typeof useFetch>) => async (): Promise<Plan[]> => {
@@ -48,7 +52,7 @@ const formatPrice = (plan: Plan): string => {
   return `$${plan.basePrice.toFixed(2)} + $${plan.pricePerAdditional10GB.toFixed(2)}/10GB`;
 };
 
-export default function Plans() {
+export default function Plans({ backgroundColor }: PlansProps) {
   const fetch = useFetch();
   const {
     data: plans = [],
@@ -61,9 +65,9 @@ export default function Plans() {
 
   if (isLoading) {
     return (
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50">
+      <section className={`py-16 px-4 sm:px-6 lg:px-8 ${backgroundColor}`}>
         <div className="max-w-5xl mx-auto text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900">Loading plans...</h2>
         </div>
       </section>
@@ -72,7 +76,7 @@ export default function Plans() {
 
   if (error) {
     return (
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50">
+      <section className={`py-16 px-4 sm:px-6 lg:px-8 ${backgroundColor}`}>
         <div className="max-w-5xl mx-auto">
           <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
             <div className="flex items-center">
@@ -87,11 +91,9 @@ export default function Plans() {
   }
 
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50">
+    <section className={`py-16 px-4 sm:px-6 lg:px-8 ${backgroundColor}`}>
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-4xl font-extrabold text-center mb-12 bg-clip-text">
-          Plans and Pricing
-        </h2>
+        <h2 className="text-4xl font-bold text-center mb-12 text-gray-800">Plans and Pricing</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {plans.map((plan) => (
             <motion.div
@@ -99,12 +101,14 @@ export default function Plans() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
+              className="h-full flex"
             >
               <PricingCard
                 title={plan.name}
                 price={formatPrice(plan)}
                 features={getFeatures(plan)}
                 highlighted={plan.code === "PRO"}
+                className="shadow-lg hover:shadow-2xl transition-all duration-300 rounded-lg flex-1 flex flex-col bg-white border border-gray-200"
               />
             </motion.div>
           ))}
@@ -119,7 +123,7 @@ export default function Plans() {
               <TooltipTrigger asChild>
                 <a
                   href="/contact"
-                  className="inline-flex items-center px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 transition duration-300 shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center px-8 py-4 bg-primary text-white rounded-lg font-semibold text-lg hover:bg-primary/90 transition duration-300 shadow-lg hover:shadow-xl"
                 >
                   Contact Sales
                   <Info className="ml-2 h-5 w-5" />
@@ -135,4 +139,3 @@ export default function Plans() {
     </section>
   );
 }
-
