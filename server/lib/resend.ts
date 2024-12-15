@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import logger from "&/lib/logger";
 
 // Validate environment variables
-const requiredEnvVars = ["RESEND_API_KEY", "FROM_EMAIL", "TO_EMAIL"];
+const requiredEnvVars = ["RESEND_API_KEY", "EMAIL_TO_ADDRESS", "EMAIL_FROM_ADDRESS"];
 const missingEnvVars = requiredEnvVars.filter(
   (varName) => !process.env[varName]
 );

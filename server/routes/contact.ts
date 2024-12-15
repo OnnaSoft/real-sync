@@ -6,7 +6,7 @@ import Joi from "joi";
 import { validateRequest } from "&/middlewares/validateRequest";
 
 // Validate environment variables
-const requiredEnvVars = ["FROM_EMAIL", "TO_EMAIL"];
+const requiredEnvVars = ["EMAIL_FROM_ADDRESS", "EMAIL_TO_ADDRESS"];
 const missingEnvVars = requiredEnvVars.filter(
   (varName) => !process.env[varName]
 );
@@ -18,8 +18,8 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-const fromEmail = process.env.FROM_EMAIL;
-const toEmail = process.env.TO_EMAIL;
+const fromEmail = process.env.EMAIL_FROM_ADDRESS;
+const toEmail = process.env.EMAIL_TO_ADDRESS;
 
 const contactRouter = Router();
 

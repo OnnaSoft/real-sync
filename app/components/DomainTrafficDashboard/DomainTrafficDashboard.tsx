@@ -90,7 +90,7 @@ export default function DomainTrafficDashboard() {
   });
 
   return (
-    <Card>
+    <Card className='bg-white'>
       <CardHeader>
         <CardTitle>
           {selectedDomain === "All Domains"

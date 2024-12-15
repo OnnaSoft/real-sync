@@ -1,6 +1,6 @@
+import "./init.js";
 import { createRequestHandler } from "@remix-run/express";
 import express from "express";
-import "./init.js";
 import "./db.js";
 import api from "./routes/index.js";
 

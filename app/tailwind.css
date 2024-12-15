@@ -95,3 +95,7 @@
 .text-destructive-foreground {
   color: hsl(var(--foreground));
 }
+
+.text-popover-foreground {
+  color: initial
+}
