@@ -12,6 +12,29 @@ import FrequentlyAskedQuestions from "~/components/FrequentlyAskedQuestions";
 import { useLoaderData } from "@remix-run/react";
 import { ColorManager } from "~/lib/colors";
 import { useMemo } from "react";
+import { MetaFunction } from "@remix-run/node";
+
+export const meta: MetaFunction = () => {
+  return [
+    {
+      title: "Seamless Connectivity Solutions | RealSync",
+    },
+    {
+      property: "og:title",
+      content: "Seamless Connectivity Solutions | RealSync",
+    },
+    {
+      name: "description",
+      content:
+        "RealSync revolutionizes connectivity and traffic management with cutting-edge solutions for businesses of all sizes. Connect, protect, and scale effortlessly.",
+    },
+    {
+      name: "keywords",
+      content:
+        "RealSync connectivity solutions, hybrid network integration, cloud-local server connection, secure tunnels for data protection, fallback solutions for high availability, intelligent traffic routing, scalable connectivity platforms, VPN alternative for businesses, dynamic traffic management, connectivity for fintech, manufacturing connectivity solutions, secure cloud computing, enterprise traffic management, business automation tools, low-latency connectivity, seamless branch office integration, IT infrastructure optimization, network redundancy solutions, modern connectivity tools",
+    },
+  ];
+};
 
 type LoaderData = {
   discoverUrl: string;

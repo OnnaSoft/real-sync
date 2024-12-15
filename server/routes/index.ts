@@ -9,6 +9,7 @@ import webhookRouter from "&/routes/webhooks";
 import billingRouter from "&/routes/billing";
 import tunnelsRouter from "&/routes/tunnels";
 import consumptionRouter from "&/routes/consumption";
+import contactRouter from "./contact";
 
 const api = express.Router();
 api.use("/webhook", webhookRouter);
@@ -21,6 +22,7 @@ api.use("/plans", plansRouter);
 api.use("/users", usersRouter);
 api.use("/billing", billingRouter);
 api.use("/tunnels", tunnelsRouter);
+api.use("/contact", contactRouter);
 api.use("/payment-methods", paymentMethodRouter);
 api.use("/consumption", consumptionRouter);
 
