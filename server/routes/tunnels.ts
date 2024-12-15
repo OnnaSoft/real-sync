@@ -6,6 +6,8 @@ import { generateUniqueKey } from '&/lib/utils';
 import { Domain } from '&/types/models';
 import fetch from 'node-fetch';
 import { Transaction } from 'sequelize';
+import Joi from 'joi';
+import { validateRequest } from '&/middlewares/validateRequest';
 
 interface CreateTunnelBody {
   domain: string;
@@ -60,7 +62,7 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
     const tunnels = await Tunnel.findAll({
       where: { userId: req.user.id },
       attributes: [
-        'id', 
+        'id',
         'domain',
         'isEnabled',
         'allowMultipleConnections',
@@ -108,150 +110,176 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
   }
 });
 
-tunnelsRouter.post('/', validateSessionToken, async (req: RequestWithUser<any, any, CreateTunnelBody>, res: Response<CreateTunnelResponse>, next: NextFunction) => {
-  let transaction: Transaction | null = null;
-  try {
-    if (!req.user?.id) {
-      throw new HttpError(401, "Unauthorized");
-    }
-
-    transaction = await sequelize.transaction();
-
-    const { domain, allowMultipleConnections, isEnabled } = req.body;
-
-    if (!domain) {
-      throw new HttpError(400, "Domain is required");
-    }
-
-    const apiKey = generateUniqueKey();
-
-    const newTunnel = await Tunnel.create({
-      domain,
-      isEnabled,
-      allowMultipleConnections,
-      userId: req.user.id,
-    }, { transaction }).catch(async (error) => {
-      throw new HttpError(500, "Error while creating tunnel in database");
-    });
-
-    await fetch(`${LIPSTICK_ENDPOINT}/domains`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": LIPSTICK_APIKEY
-      },
-      body: JSON.stringify({
-        "name": domain,
-        "apiKey": apiKey
-      })
-    }).then((response) => {
-      if (!response.ok) {
-        throw new HttpError(500, "Tunnel already exists in Lipstick");
-      }
-    }).catch((error) => {
-      if (error instanceof HttpError) {
-        throw error;
-      }
-      throw new HttpError(500, "Error while creating domain in Lipstick");
-    });
-
-    await transaction.commit();
-
-    const response = await fetch(`${LIPSTICK_ENDPOINT}/domains/${domain}`, {
-      headers: {
-        "Authorization": LIPSTICK_APIKEY
-      },
-    }).catch(() => {
-      throw new HttpError(500, "Error while fetching domain from Lipstick");
-    });
-
-    const lipstickResponse = await response.json() as Domain;
-
-    res.status(201).json({
-      data: {
-        id: newTunnel.id,
-        domain: newTunnel.domain,
-        apiKey: lipstickResponse.apiKey,
-        allowMultipleConnections: newTunnel.allowMultipleConnections,
-        isEnabled: newTunnel.isEnabled,
-        createdAt: newTunnel.createdAt,
-        updatedAt: newTunnel.updatedAt
-      }
-    });
-  } catch (error) {
-    if (transaction) await transaction.rollback();
-    next(error);
-  }
+const createTunnelBodySchema = Joi.object({
+  domain: Joi.string().required().messages({
+    "string.base": "Domain must be a string",
+    "string.empty": "Domain cannot be empty"
+  }),
+  allowMultipleConnections: Joi.boolean().required().messages({
+    "boolean.base": "allowMultipleConnections must be a boolean"
+  }),
+  isEnabled: Joi.boolean().required().messages({
+    "boolean.base": "isEnabled must be a boolean"
+  })
 });
+
+tunnelsRouter.post('/', validateSessionToken,
+  validateRequest(createTunnelBodySchema),
+  async (req: RequestWithUser<any, any, CreateTunnelBody>, res: Response<CreateTunnelResponse>, next: NextFunction) => {
+    let transaction: Transaction | null = null;
+    try {
+      if (!req.user?.id) {
+        throw new HttpError(401, "Unauthorized");
+      }
+
+      transaction = await sequelize.transaction();
+
+      const { domain, allowMultipleConnections, isEnabled } = req.body;
+
+      if (!domain) {
+        throw new HttpError(400, "Domain is required");
+      }
+
+      const apiKey = generateUniqueKey();
+
+      const newTunnel = await Tunnel.create({
+        domain,
+        isEnabled,
+        allowMultipleConnections,
+        userId: req.user.id,
+      }, { transaction }).catch(async (error) => {
+        throw new HttpError(500, "Error while creating tunnel in database");
+      });
+
+      await fetch(`${LIPSTICK_ENDPOINT}/domains`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": LIPSTICK_APIKEY
+        },
+        body: JSON.stringify({
+          "name": domain,
+          "apiKey": apiKey
+        })
+      }).then((response) => {
+        if (!response.ok) {
+          throw new HttpError(500, "Tunnel already exists in Lipstick");
+        }
+      }).catch((error) => {
+        if (error instanceof HttpError) {
+          throw error;
+        }
+        throw new HttpError(500, "Error while creating domain in Lipstick");
+      });
+
+      await transaction.commit();
+
+      const response = await fetch(`${LIPSTICK_ENDPOINT}/domains/${domain}`, {
+        headers: {
+          "Authorization": LIPSTICK_APIKEY
+        },
+      }).catch(() => {
+        throw new HttpError(500, "Error while fetching domain from Lipstick");
+      });
+
+      const lipstickResponse = await response.json() as Domain;
+
+      res.status(201).json({
+        data: {
+          id: newTunnel.id,
+          domain: newTunnel.domain,
+          apiKey: lipstickResponse.apiKey,
+          allowMultipleConnections: newTunnel.allowMultipleConnections,
+          isEnabled: newTunnel.isEnabled,
+          createdAt: newTunnel.createdAt,
+          updatedAt: newTunnel.updatedAt
+        }
+      });
+    } catch (error) {
+      if (transaction) await transaction.rollback();
+      next(error);
+    }
+  });
 
 interface UpdateTunnelBody {
   isEnabled?: boolean;
   allowMultipleConnections?: boolean;
 }
 
-tunnelsRouter.patch('/:id', validateSessionToken, async (req: RequestWithUser<{ id: string }, any, UpdateTunnelBody>, res: Response, next: NextFunction) => {
-  let transaction: Transaction | null = null;
-  try {
-    if (!req.user?.id) {
-      throw new HttpError(401, "Unauthorized");
-    }
-
-    transaction = await sequelize.transaction();
-
-    const { id } = req.params;
-    const { isEnabled, allowMultipleConnections } = req.body;
-
-    const tunnel = await Tunnel.findOne({
-      where: { id, userId: req.user.id }
-    });
-
-    if (!tunnel) {
-      throw new HttpError(404, "Tunnel not found");
-    }
-
-    if (typeof isEnabled === 'boolean') {
-      tunnel.isEnabled = isEnabled;
-    }
-    if (typeof allowMultipleConnections === 'boolean') {
-      tunnel.allowMultipleConnections = allowMultipleConnections;
-    }
-    const updateResponse = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": LIPSTICK_APIKEY
-      },
-      body: JSON.stringify({
-        "allowMultipleConnections": tunnel.allowMultipleConnections,
-        "isEnabled": tunnel.isEnabled
-      })
-    }).catch(() => {
-      throw new HttpError(500, "Error while updating domain in Lipstick");
-    });
-
-    if (!updateResponse.ok) {
-      throw new HttpError(500, "Error while updating domain in Lipstick");
-    }
-
-    await tunnel.save({ transaction });
-    await transaction.commit();
-
-    res.status(200).json({
-      data: {
-        id: tunnel.id,
-        domain: tunnel.domain,
-        isEnabled: tunnel.isEnabled,
-        allowMultipleConnections: tunnel.allowMultipleConnections,
-        updatedAt: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    if (transaction) await transaction.rollback().catch((error) => {
-      console.error("Error while rolling back transaction", error);
-    });
-    next(error);
-  }
+const updateTunnelBodySchema = Joi.object({
+  isEnabled: Joi.boolean().required().messages({
+    "boolean.base": "isEnabled must be a boolean"
+  }),
+  allowMultipleConnections: Joi.boolean().required().messages({
+    "boolean.base": "allowMultipleConnections must be a boolean"
+  })
 });
+
+tunnelsRouter.patch('/:id', validateSessionToken,
+  validateRequest(updateTunnelBodySchema),
+  async (req: RequestWithUser<{ id: string }, any, UpdateTunnelBody>, res: Response, next: NextFunction) => {
+    let transaction: Transaction | null = null;
+    try {
+      if (!req.user?.id) {
+        throw new HttpError(401, "Unauthorized");
+      }
+
+      transaction = await sequelize.transaction();
+
+      const { id } = req.params;
+      const { isEnabled, allowMultipleConnections } = req.body;
+
+      const tunnel = await Tunnel.findOne({
+        where: { id, userId: req.user.id }
+      });
+
+      if (!tunnel) {
+        throw new HttpError(404, "Tunnel not found");
+      }
+
+      if (typeof isEnabled === 'boolean') {
+        tunnel.isEnabled = isEnabled;
+      }
+      if (typeof allowMultipleConnections === 'boolean') {
+        tunnel.allowMultipleConnections = allowMultipleConnections;
+      }
+      const updateResponse = await fetch(`${LIPSTICK_ENDPOINT}/domains/${tunnel.domain}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": LIPSTICK_APIKEY
+        },
+        body: JSON.stringify({
+          "allowMultipleConnections": tunnel.allowMultipleConnections,
+          "isEnabled": tunnel.isEnabled
+        })
+      }).catch(() => {
+        throw new HttpError(500, "Error while updating domain in Lipstick");
+      });
+
+      if (!updateResponse.ok) {
+        throw new HttpError(500, "Error while updating domain in Lipstick");
+      }
+
+      await tunnel.save({ transaction });
+      await transaction.commit();
+
+      res.status(200).json({
+        data: {
+          id: tunnel.id,
+          domain: tunnel.domain,
+          isEnabled: tunnel.isEnabled,
+          allowMultipleConnections: tunnel.allowMultipleConnections,
+          updatedAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      if (transaction) await transaction.rollback().catch((error) => {
+        console.error("Error while rolling back transaction", error);
+      });
+      next(error);
+    }
+  });
 
 
 tunnelsRouter.post('/:id/regenerate-api-key', validateSessionToken, async (req: RequestWithUser<{ id: string }>, res: Response, next: NextFunction) => {

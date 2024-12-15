@@ -9,6 +9,8 @@ import addPaymentMethodInfo, { RequestWithUserAndPayment } from "server/middlewa
 import { uploadFileToS3 } from "&/services/s3Service";
 import multer from "multer";
 import logger from "&/lib/logger";
+import Joi from "joi";
+import { validateRequest } from "&/middlewares/validateRequest";
 
 const usersRouter = express.Router();
 
@@ -51,10 +53,6 @@ interface ProfileResponse {
   user: UserAttributes;
   currentPlan: UserSubscriptionWithPlan;
   hasPaymentMethod: boolean;
-}
-
-interface AssignPlanBody {
-  planId: number;
 }
 
 interface AssignPlanResponse {
@@ -203,9 +201,22 @@ usersRouter.post("/avatar",
     }
   });
 
+interface AssignPlanBody {
+  planId: number,
+};
+
+const AssignPlanSchema = Joi.object({
+  planId: Joi.number().min(1).required().messages({
+    "any.required": "Plan ID is required",
+    "number.base": "Plan ID must be a number",
+    "number.min": "Plan ID must be a positive number",
+  }),
+});
+
 usersRouter.post(
   "/assign-plan",
   validateSessionToken,
+  validateRequest(AssignPlanSchema),
   async (req: RequestWithSession<{}, AssignPlanResponse, AssignPlanBody>, res: Response<AssignPlanResponse>, next: NextFunction) => {
     const { planId } = req.body;
     const userId = req.user?.id;
