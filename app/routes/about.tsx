@@ -1,8 +1,6 @@
 import React from "react";
-import { Link } from "@remix-run/react";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
-import { Code, Globe, Shield, Zap } from "lucide-react";
 import AboutHero from "~/components/AboutHero";
 import OurStory from "~/components/OurStory";
 import MissionVisionValues from "~/components/MissionVisionValues";
