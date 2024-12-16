@@ -1,11 +1,12 @@
 import express, { Response, NextFunction } from "express";
-import { PaymentMethod, User, sequelize } from "../db";
+import { PaymentMethod, User, UserActivity, sequelize } from "../db";
 import validateSessionToken from "../middlewares/validateSessionToken";
 import { body, validationResult } from "express-validator";
 import stripe from "../lib/stripe";
 import { HttpError } from "http-errors-enhanced";
 import { Transaction } from "sequelize";
 import { RequestWithSession } from "../types/http";
+import { getClientMetadata } from "&/lib/utils";
 
 const paymentMethodRouter = express.Router();
 
@@ -113,6 +114,13 @@ paymentMethodRouter.get(
         order: [["createdAt", "DESC"]],
       });
 
+      UserActivity.create({
+        userId: req.user.id,
+        activityType: "payment_methods",
+        description: "Viewed payment methods",
+        metadata: getClientMetadata(req),
+      });
+
       res.status(200).json({
         message: "Payment methods retrieved successfully",
         total: paymentMethods.length,
@@ -203,6 +211,13 @@ paymentMethodRouter.post(
 
       await transaction.commit();
 
+      UserActivity.create({
+        userId: req.user.id,
+        activityType: "payment_method_added",
+        description: "Added payment method",
+        metadata: getClientMetadata(req),
+      });
+
       res.status(201).json({
         message: "Payment method added successfully",
         paymentMethod: newPaymentMethod.toJSON() as PaymentMethodData,
@@ -265,6 +280,13 @@ paymentMethodRouter.put(
 
       await paymentMethod.update({ type, last4, expMonth, expYear, brand });
 
+      UserActivity.create({
+        userId: req.user.id,
+        activityType: "payment_method_updated",
+        description: "Updated payment method",
+        metadata: getClientMetadata(req),
+      });
+
       res.status(200).json({
         message: "Payment method updated successfully",
         paymentMethod: paymentMethod.toJSON() as PaymentMethodData,
@@ -314,6 +336,13 @@ paymentMethodRouter.delete(
         });
 
       await paymentMethod.destroy();
+
+      UserActivity.create({
+        userId: req.user.id,
+        activityType: "payment_method_deleted",
+        description: "Deleted payment method",
+        metadata: getClientMetadata(req),
+      });
 
       res.status(200).json({ message: "Payment method deleted successfully" });
     } catch (error) {
@@ -382,6 +411,13 @@ paymentMethodRouter.post(
         invoice_settings: {
           default_payment_method: updatedPaymentMethod.getDataValue("stripePaymentMethodId"),
         },
+      });
+
+      UserActivity.create({
+        userId: req.user.id,
+        activityType: "payment_method_set_default",
+        description: "Set payment method as default",
+        metadata: getClientMetadata(req),
       });
 
       await transaction.commit();

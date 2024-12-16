@@ -2,11 +2,12 @@ import express, { Request, Response, NextFunction } from "express";
 import * as core from "express-serve-static-core";
 import { HttpError } from "http-errors-enhanced";
 import { validateRequest } from "&/middlewares/validateRequest";
-import { Tunnel, TunnelConsumption, UserSubscription } from "&/db";
+import { Tunnel, TunnelConsumption, UserActivity, UserSubscription } from "&/db";
 import validateApiKey from "&/middlewares/validateApiKey";
 import validateSessionToken, { RequestWithUser } from "&/middlewares/validateSessionToken";
 import stripe from "&/lib/stripe";
 import Joi from "joi";
+import { getClientMetadata } from "&/lib/utils";
 
 const consumptionRouter = express.Router();
 
@@ -54,7 +55,14 @@ consumptionRouter.get("/",
           domain: tunnelData.domain,
           consumptions,
         };
-      })
+      });
+
+      UserActivity.create({
+        userId: user.id,
+        activityType: "consumption_history",
+        description: "Viewed consumption history",
+        metadata: getClientMetadata(req),
+      });
 
       res.status(200).json(response);
     } catch (error) {
@@ -173,6 +181,13 @@ consumptionRouter.post(
 
         await consumption.update({ dataUsage });
       }
+
+      UserActivity.create({
+        userId,
+        activityType: "consumption_updated",
+        description: "Updated consumption",
+        metadata: getClientMetadata(req),
+      });
 
       res.status(200).json({ message: "Updated consumption" });
     } catch (error) {

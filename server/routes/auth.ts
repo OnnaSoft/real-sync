@@ -233,28 +233,32 @@ interface LogoutResBody {
 authRouter.get(
   "/logout",
   async (req: RequestWithUser, res: Response<LogoutResBody>, next: NextFunction) => {
-    const userId = req.user?.id;
+    try {
+      const userId = req.user?.id;
 
-    if (!userId) {
-      next(new HttpError(401, "Unauthorized"));
-      return;
-    }
+      if (!userId) {
+        next(new HttpError(401, "Unauthorized"));
+        return;
+      }
 
-    const redisCli = await getRedisInstance()
-      .catch((error) => {
-        logger.error("Failed to get Redis client", { error: error.message });
-        throw new HttpError(500, "Failed to register user");
+      const redisCli = await getRedisInstance()
+        .catch((error) => {
+          logger.error("Failed to get Redis client", { error: error.message });
+          throw new HttpError(500, "Failed to register user");
+        });
+      redisCli.del(`user:${userId}:token`);
+
+      UserActivity.create({
+        userId,
+        activityType: "logout",
+        description: "User logged out",
+        metadata: getClientMetadata(req),
       });
-    redisCli.del(`user:${userId}:token`);
 
-    UserActivity.create({
-      userId,
-      activityType: "logout",
-      description: "User logged out",
-      metadata: getClientMetadata(req),
-    });
-
-    res.send({ message: "Logged out successfully" });
+      res.send({ message: "Logged out successfully" });
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
