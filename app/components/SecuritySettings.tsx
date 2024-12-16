@@ -31,7 +31,7 @@ export default function SecuritySettings({ activeSessions }: Readonly<SecuritySe
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirm New Password</label>
               <input type="password" id="confirmPassword" name="confirmPassword" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" />
             </div>
-            <button type="submit" className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Change Password</button>
+            <button type="submit" className="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary focus:outline-none focus:ring-2 focus:bg-primary focus:ring-offset-2">Change Password</button>
           </Form>
         </div>
         <div>

@@ -99,3 +99,7 @@
 .text-popover-foreground {
   color: initial
 }
+
+.bg-background {
+  @apply bg-white
+}

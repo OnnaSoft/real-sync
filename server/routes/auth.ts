@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction, Router } from "express";
-import { User, Plan, UserSubscription, sequelize } from "../db";
+import { User, Plan, UserSubscription, sequelize, UserActivity } from "../db";
 import { Op, Transaction } from "sequelize";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -12,6 +12,7 @@ import { validateRequest } from "&/middlewares/validateRequest";
 import validateSessionToken, { RequestWithUser } from "&/middlewares/validateSessionToken";
 import logger from "&/lib/logger";
 import { getRedisInstance } from "&/redis";
+import { getClientMetadata } from "&/lib/utils";
 
 const authRouter = Router();
 
@@ -88,14 +89,6 @@ authRouter.post(
   ) => {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-      throw new HttpError(400, "Username and password are required", {
-        errors: {
-          credentials: { message: "Username and password are required" },
-        },
-      });
-    }
-
     try {
       const user = await User.scope('withPassword').findOne({
         where: {
@@ -143,6 +136,13 @@ authRouter.post(
         { expiresIn: REFRESH_TOKEN_TTL }
       );
       await redisCli.set(`user:${user.getDataValue("id")}:refreshToken`, refreshToken);
+
+      UserActivity.create({
+        userId: user.getDataValue("id"),
+        activityType: "login",
+        description: "User logged in",
+        metadata: getClientMetadata(req),
+      });
 
       res.status(200).json({
         message: "Login successful",
@@ -232,9 +232,28 @@ interface LogoutResBody {
 
 authRouter.get(
   "/logout",
-  (req: Request, res: Response<LogoutResBody>) => {
-    // Here you would typically destroy the session or invalidate the JWT token
-    // For this example, we'll just return a success message
+  async (req: RequestWithUser, res: Response<LogoutResBody>, next: NextFunction) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      next(new HttpError(401, "Unauthorized"));
+      return;
+    }
+
+    const redisCli = await getRedisInstance()
+      .catch((error) => {
+        logger.error("Failed to get Redis client", { error: error.message });
+        throw new HttpError(500, "Failed to register user");
+      });
+    redisCli.del(`user:${userId}:token`);
+
+    UserActivity.create({
+      userId,
+      activityType: "logout",
+      description: "User logged out",
+      metadata: getClientMetadata(req),
+    });
+
     res.send({ message: "Logged out successfully" });
   }
 );
@@ -352,6 +371,13 @@ authRouter.post(
 
       await transaction.commit();
 
+      UserActivity.create({
+        userId: newUser.getDataValue("id"),
+        activityType: "register",
+        description: "User registered",
+        metadata: getClientMetadata(req),
+      });
+
       res.status(201).json({
         message: "User registered successfully and assigned free plan",
         userId: newUser.getDataValue("id"),
@@ -453,6 +479,13 @@ authRouter.post(
         throw new HttpError(500, "Failed to send reset email");
       }
 
+      UserActivity.create({
+        userId: user.getDataValue("id"),
+        activityType: "forgot-password",
+        description: "User requested password reset",
+        metadata: getClientMetadata(req),
+      });
+
       res.status(200).json({
         message: "Password reset email sent",
       });
@@ -511,6 +544,13 @@ authRouter.post(
         password: newPassword,
         resetToken: null,
         resetTokenExpiry: null,
+      });
+
+      UserActivity.create({
+        userId: user.getDataValue("id"),
+        activityType: "reset-password",
+        description: "User reset password",
+        metadata: getClientMetadata(req),
       });
 
       res.status(200).json({
@@ -576,6 +616,13 @@ authRouter.patch("/update-password",
           logger.error("Failed to update password", { error: error.message });
           throw new HttpError(400, "Failed to update password");
         });
+
+      UserActivity.create({
+        userId: user.getDataValue("id"),
+        activityType: "update-password",
+        description: "User updated password",
+        metadata: getClientMetadata(req),
+      });
 
       res.status(200).json({
         message: "Password updated successfully",

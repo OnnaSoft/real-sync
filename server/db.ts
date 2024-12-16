@@ -7,6 +7,7 @@ import UserSubscriptionModel from "&/models/UserSubscription";
 import TunnelModel from "&/models/Tunnel";
 import TunnelConsumptionModel from "&/models/TunnelConsumption";
 import { ensureDefaultPlans } from "&/migrations/plans";
+import UserActivityModel from "./models/UserActivity";
 
 // Validate environment variables
 const requiredEnvVars = [
@@ -48,6 +49,7 @@ export const PaymentMethod = PaymentMethodModel(sequelize);
 export const Tunnel = TunnelModel(sequelize);
 export const StripeEvent = StripeEventModel(sequelize);
 export const TunnelConsumption = TunnelConsumptionModel(sequelize);
+export const UserActivity = UserActivityModel(sequelize);
 
 // Define associations
 const models = {
@@ -57,7 +59,8 @@ const models = {
   PaymentMethod,
   Tunnel,
   StripeEvent,
-  TunnelConsumption
+  TunnelConsumption,
+  UserActivity,
 };
 Object.values(models)
   .forEach((model) => ('associate' in model) && model.associate(models));
