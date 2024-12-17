@@ -39,6 +39,9 @@ if (missingEnvVars.length > 0) {
 const JWT_SECRET = process.env.JWT_SECRET ?? "";
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
 const REFRESH_TOKEN_TTL = process.env.REFRESH_TOKEN_TTL;
+const FRONTEND_URL = process.env.FRONTEND_URL;
+const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME;
+const EMAIL_FROM_ADDRESS = process.env.EMAIL_FROM_ADDRESS;
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface ErrorsMap {
@@ -439,7 +442,7 @@ authRouter.post(
       });
 
       const { error } = await resend.emails.send({
-        from: `${process.env.EMAIL_FROM_NAME} <${process.env.EMAIL_FROM_ADDRESS}>`,
+        from: `${EMAIL_FROM_NAME} <${EMAIL_FROM_ADDRESS}>`,
         to: user.getDataValue("email"),
         subject: "Password Reset Request",
         html: `
@@ -461,15 +464,15 @@ authRouter.post(
                   <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                       <td align="center">
-                        <a href="${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}" style="display: inline-block; background-color: #007bff; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-weight: bold;">Reset Password</a>
+                        <a href="${FRONTEND_URL}/auth/reset-password?token=${resetToken}" style="display: inline-block; background-color: #007bff; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 5px; font-weight: bold;">Reset Password</a>
                       </td>
                     </tr>
                   </table>
                   <p style="margin-top: 30px;">If the button doesn't work, you can also copy and paste the following link into your browser:</p>
-                  <p style="word-break: break-all; color: #007bff;">${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}</p>
+                  <p style="word-break: break-all; color: #007bff;">${FRONTEND_URL}/auth/reset-password?token=${resetToken}</p>
                   <p style="margin-top: 30px;">This link will expire in 1 hour for security reasons.</p>
                   <p style="margin-top: 30px;">If you didn't request a password reset, please ignore this email or contact support if you have any concerns.</p>
-                  <p style="margin-top: 30px;">Best regards,<br>The ${process.env.EMAIL_FROM_NAME} Team</p>
+                  <p style="margin-top: 30px;">Best regards,<br>The ${EMAIL_FROM_NAME} Team</p>
                 </td>
               </tr>
             </table>
