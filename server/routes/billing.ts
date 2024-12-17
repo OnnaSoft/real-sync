@@ -65,7 +65,6 @@ billingRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
       data: billingHistory,
     });
   } catch (error) {
-    console.trace(error);
     next(error);
   }
 });
