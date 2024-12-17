@@ -1,4 +1,5 @@
 import { Form } from "@remix-run/react";
+import useFetch from "~/hooks/useFetch";
 
 interface Session {
   id: number;
@@ -11,6 +12,7 @@ interface SecuritySettingsProps {
 }
 
 export default function SecuritySettings({ activeSessions }: Readonly<SecuritySettingsProps>) {
+  const fetch = useFetch();
   return (
     <section className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-2xl font-semibold mb-4">Security</h2>

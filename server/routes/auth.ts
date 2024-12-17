@@ -602,7 +602,9 @@ authRouter.patch("/update-password",
     }
 
     try {
-      const user = await User.findByPk(userId)
+      const user = await User.findByPk(userId, {
+        attributes: ["id", "password"],
+      })
         .catch((error) => {
           logger.error("Failed to update password", { error: error.message });
           throw new HttpError(400, "Failed to update password");
@@ -613,7 +615,11 @@ authRouter.patch("/update-password",
       }
 
       const hashedPassword = user.getDataValue("password");
-      const isPasswordValid = await bcrypt.compare(oldPassword, hashedPassword);
+      const isPasswordValid = await bcrypt.compare(oldPassword, hashedPassword)
+        .catch((error) => {
+          logger.error("Failed to compare passwords", { error: error.message });
+          throw new HttpError(400, "Old password comparison failed");
+        });
       if (!isPasswordValid) {
         throw new HttpError(400, "Invalid old password");
       }

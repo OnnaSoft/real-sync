@@ -55,7 +55,7 @@ const TunnelConsumptionModel = (sequelize: Sequelize): TunnelConsumptionModel =>
         },
       },
       dataUsage: {
-        type: DataTypes.BIGINT({ unsigned: true }),
+        type: DataTypes.BIGINT,
         allowNull: false,
         validate: {
           min: 0,
