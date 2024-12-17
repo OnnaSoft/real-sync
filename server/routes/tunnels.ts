@@ -113,13 +113,18 @@ tunnelsRouter.get('/', validateSessionToken, async (req: RequestWithUser, res: R
 const createTunnelBodySchema = Joi.object({
   domain: Joi.string().required().messages({
     "string.base": "Domain must be a string",
-    "string.empty": "Domain cannot be empty"
+    "string.empty": "Domain cannot be empty",
+    "string.required": "Domain is required"
   }),
   allowMultipleConnections: Joi.boolean().required().messages({
-    "boolean.base": "allowMultipleConnections must be a boolean"
+    "boolean.base": "allowMultipleConnections must be a boolean",
+    "boolean.empty": "allowMultipleConnections cannot be empty",
+    "boolean.required": "allowMultipleConnections is required"
   }),
   isEnabled: Joi.boolean().required().messages({
-    "boolean.base": "isEnabled must be a boolean"
+    "boolean.base": "isEnabled must be a boolean",
+    "boolean.empty": "isEnabled cannot be empty",
+    "boolean.required": "isEnabled is required"
   })
 });
 
@@ -208,10 +213,14 @@ interface UpdateTunnelBody {
 
 const updateTunnelBodySchema = Joi.object({
   isEnabled: Joi.boolean().required().messages({
-    "boolean.base": "isEnabled must be a boolean"
+    "boolean.base": "isEnabled must be a boolean",
+    "boolean.empty": "isEnabled cannot be empty",
+    "boolean.required": "isEnabled is required"
   }),
   allowMultipleConnections: Joi.boolean().required().messages({
-    "boolean.base": "allowMultipleConnections must be a boolean"
+    "boolean.base": "allowMultipleConnections must be a boolean",
+    "boolean.empty": "allowMultipleConnections cannot be empty",
+    "boolean.required": "allowMultipleConnections is required"
   })
 });
 
